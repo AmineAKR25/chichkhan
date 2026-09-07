@@ -1,36 +1,45 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Havana — carte digitale
 
-## Getting Started
+French-language menu for Havana, with the Nuit de Djerba identity: charcoal, cream, antique gold, Cormorant Garamond and Jost. The homepage uses coloured placeholders only. Café Lounge informed the responsive menu navigation; Havana retains its own catalogue and styling.
 
-First, run the development server:
+## Development
 
-```bash
+```sh
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open http://localhost:3000. Use Node.js 22.18+ (or a newer supported release) to run the TypeScript search tests directly.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Routes and content
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- `/`: original Havana homepage, arch composition and six category links.
+- `/carte`: category overview, with a desktop sidebar or mobile category rail.
+- `/carte/[categorie]`: server-rendered category and product listings.
+- `/produit/[slug]`: existing product details.
+- `/infos`: practical information.
 
-## Learn More
+`src/lib/menu.ts` holds all 38 products, prices and six categories. `src/lib/site.ts` holds venue details. Confirm those venue details before publication.
 
-To learn more about Next.js, take a look at the following resources:
+The menu search matches names, ingredients and categories, accepts unaccented input, and opens the exact product route. Use the search button or Command/Ctrl+K. Escape closes the dialog; keyboard focus cycles within it and returns to the trigger on dismissal. Without JavaScript, the rendered category links and product pages remain accessible.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Structure
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- `src/app/home.css`: homepage styles, scoped to `.havana-home`.
+- `src/app/carte/menu.css`: menu browsing styles, scoped to menu components.
+- `src/app/carte/layout.tsx`: server layout supplies compact search/navigation data.
+- `src/components/MenuChrome.tsx`: persistent menu navigation and native search dialog.
+- `src/lib/menu-search.ts`: accent-insensitive catalogue search.
+- `.design/havana-menu-blend/`: design direction and implementation notes.
+- `DESIGN_REVIEW.md`: baseline review before this iteration, not a current defect list.
 
-## Deploy on Vercel
+## Validation
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```sh
+npm run lint
+npx tsc --noEmit
+npm test
+npm run build
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+The build prerenders the homepage, menu index, six categories and 38 product pages. Local review screenshots are ignored by Git.

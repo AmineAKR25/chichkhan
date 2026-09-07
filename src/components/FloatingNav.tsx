@@ -24,6 +24,9 @@ export function FloatingNav() {
     };
   }, [open]);
 
+  // These routes provide their own persistent navigation.
+  if (pathname === "/" || pathname === "/carte" || pathname.startsWith("/carte/")) return null;
+
   return (
     <>
       <button

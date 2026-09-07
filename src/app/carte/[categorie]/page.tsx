@@ -3,7 +3,6 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { categories, getCategory } from "@/lib/menu";
 import { accentStyle } from "@/components/accents";
-import { TopBar } from "@/components/TopBar";
 import { PhotoSlot } from "@/components/PhotoSlot";
 import { MenuRow } from "@/components/MenuRow";
 import { Footnotes } from "@/components/Footnotes";
@@ -11,72 +10,68 @@ import { Footnotes } from "@/components/Footnotes";
 export function generateStaticParams() {
   return categories.map((category) => ({ categorie: category.slug }));
 }
-
 export async function generateMetadata({
   params,
 }: PageProps<"/carte/[categorie]">): Promise<Metadata> {
   const { categorie } = await params;
   const category = getCategory(categorie);
-  if (!category) return {};
-  return { title: category.name, description: category.intro };
+  return category ? { title: category.name, description: category.intro } : {};
 }
-
-/** Écrans 03 – 08 — un chapitre. Le fond ne bouge pas, l'accent si. */
 export default async function Chapitre({
   params,
 }: PageProps<"/carte/[categorie]">) {
   const { categorie } = await params;
   const category = getCategory(categorie);
   if (!category) notFound();
-
   const next = categories[category.index % categories.length];
-
   return (
-    <main className="screen pb-32" style={accentStyle(category.accent)}>
-      <TopBar
-        href="/carte"
-        label="La carte"
-        counter={`${String(category.index).padStart(2, "0")} / 06`}
-      />
-
-      <div className="relative px-6 pb-6 pt-8">
-        <PhotoSlot id={category.slug} caption={category.slotCaption} />
-        <div className="absolute left-6 top-[60px] w-[200px]">
-          <p className="eyebrow-wide" style={{ color: "var(--accent)" }}>
+    <main
+      id="menu-content"
+      className="menu-category-page"
+      tabIndex={-1}
+      style={accentStyle(category.accent)}
+    >
+      <div className="menu-breadcrumb">
+        <Link href="/carte">La carte</Link>
+        <span aria-hidden="true">/</span>
+        <span>{category.name}</span>
+      </div>
+      <header className="menu-category-hero">
+        <div className="menu-category-art" aria-hidden="true">
+          <PhotoSlot id={category.slug} />
+        </div>
+        <div className="menu-category-heading">
+          <p className="menu-eyebrow" style={{ color: "var(--accent)" }}>
             {category.chapter}
           </p>
-          <h1 className="display mt-3 text-[42px]">
+          <h1>
             {category.display[0]}
             <br />
-            {category.display[1]}
+            <em>{category.display[1]}</em>
           </h1>
         </div>
-      </div>
-
-      <div className="px-6 pb-8">
-        <p className="lede mb-5">{category.intro}</p>
-
-        {category.items.map((item) => (
-          <MenuRow key={item.slug} item={item} />
-        ))}
-
+      </header>
+      <div className="menu-category-body">
+        <div className="menu-category-description">
+          <p>{category.intro}</p>
+          <span>{category.items.length} articles · DT</span>
+        </div>
+        <div className="menu-item-grid">
+          {category.items.map((item) => (
+            <MenuRow key={item.slug} item={item} />
+          ))}
+        </div>
         {category.footnote && (
           <p className="note mt-6" style={{ color: "var(--accent)" }}>
             {category.footnote}
           </p>
         )}
-
         <Footnotes items={category.items} />
-
-        <Link
-          href={`/carte/${next.slug}`}
-          className="mt-12 flex items-baseline justify-between py-4"
-          style={{ borderTop: "1px solid var(--rule-strong)" }}
-        >
-          <span className="eyebrow" style={{ color: "var(--color-or)" }}>
-            Chapitre suivant
+        <Link href={`/carte/${next.slug}`} className="menu-next-category">
+          <span className="menu-eyebrow">Chapitre suivant</span>
+          <span>
+            {next.name} <i aria-hidden="true">→</i>
           </span>
-          <span className="display text-[22px]">{next.name}</span>
         </Link>
       </div>
     </main>
