@@ -1,0 +1,8 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "installCommand": "",
+  "buildCommand": "npm --prefix prototypes/chichkhan run build",
+  "outputDirectory": "prototypes/chichkhan/dist",
+  "cleanUrls": true
+}
