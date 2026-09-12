@@ -1,0 +1,45 @@
+# Chichkhan Djerba — prototype 1
+
+This is a standalone Chichkhan prototype. The Havana application remains at the repository root.
+
+## Resources and menu mapping
+
+- `menu1_1.jpg` and `menu1_2.jpg` → `/menu-1`: SO Restaurant Lounge, 73 entries across 11 categories. Includes food, desserts, drinks and sauce supplements.
+- `IMG_2329.jpg` → café breakfasts.
+- `IMG_2330.jpg` → café drinks and ice cream.
+- `IMG_2331.jpg` → café crêpes, waffles, omelettes, brioche and desserts.
+- `IMG_2332.jpg` → the café booklet's chicha list, presented as read-only menu content.
+- `IMG_2333.jpg` → café burgers, panozzos, tacos, pizzas and box.
+- Those five café content photographs → `/menu-2`: 150 entries across 20 categories.
+- `IMG_2334.jpg`: Chichkhan cover, supports the spelling, “Since 2002” and house-made signature.
+- `IMG_2336.jpg`: SO cover, confirms the restaurant identity.
+- `IMG_2335.heic`: conflicting SO restaurant page. Its pizza section is crossed out and some prices differ. Kept as a reference only; the explicitly named menu1 photos take precedence for this prototype. This is an assumption awaiting client confirmation.
+- `logo.jpg` and `hero.png`: supplied brand logo and entrance photograph. Optimized copies are used; originals are untouched. No generated dish photos or stock images.
+
+## Visual direction
+
+The entrance's arches become the homepage's photo frame and the menu identity plaques. Gold comes from the logo; green from the café booklet; navy distinguishes SO. Serif headings echo the printed booklet, with a compact sans-serif for names and prices. The homepage provides two equal menu entrances. Menu pages expose their own search and categories, rather than combining overlapping products.
+
+Palette: paper #F9F8F2, ink #183D31, garden #1B503E, gold #CBA85B, navy #173E50, line #D9DED4. Typography: Georgia display; Avenir Next / system sans for reading. Price columns use tabular numerals. Mobile uses horizontal category navigation and a persistent search field; desktop uses a category sidebar.
+
+## Content review before final release
+
+1. Confirm the source precedence for the SO page above. Examples: Surf & turf is 48 DT in menu1_1 versus 54 DT in IMG_2335; lasagne is 32 versus 30 DT. These are not merged.
+2. Confirm the café milkshake names obscured by glare in IMG_2330 (especially Spéculoos, Oreo and Kinder). Values are readable at 14.500 DT; familiar product spellings are provisionally normalized.
+3. The café pizzas “Truffe” and “Fromages” have the same printed ingredients (including crème de champignon). This wording is preserved rather than inventing ingredients.
+4. Accents and obvious spelling errors are normalized, but no unprovided ingredients, portion sizes, allergens, hours, availability or venue contact claims are added.
+5. Prices are expressed in Tunisian dinars with three decimal places (15.500 in the paper source → 15,500 DT online).
+6. Confirm final menu names, prices and photography after client feedback. This prototype is marked noindex; it has no ordering or payment flow.
+
+## Editing
+
+Menu content and source provenance live in `dist/menu-data.js`. Run `node build.mjs` after a menu data or template change to regenerate both route documents. Edit `dist/style.css` for the shared design and `dist/menu.js` for search. The homepage is `dist/index.html`. All pages have HTML menu content before JavaScript runs.
+
+Local preview: `python3 -m http.server 4173 --directory dist`.
+
+## Verification
+
+- Reviewed homepage and menus at phone, tablet and desktop sizes (375, 768, 1280 pixels); checked no document-wide horizontal overflow.
+- Search returns only the active menu's entries, handles accents and word order, and provides an empty state with reset. Escape also clears search.
+- Checked category anchors, sticky mobile navigation/search, opening breakfast compositions, navigation between both menus, and price separation fixtures from the photographs.
+- All local HTML links, fragments and asset paths validated. JavaScript syntax and menu data integrity checks pass; no browser runtime errors observed.
