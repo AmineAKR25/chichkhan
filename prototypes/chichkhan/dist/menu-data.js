@@ -19,6 +19,12 @@ export const menus = {
     accent: "bons moments.",
     intro: "Des premières bouchées à la dernière note sucrée.",
     theme: "so",
+    slug: "restaurant",
+    brandLine: "DJERBA · RESTAURANT LOUNGE",
+    heroAlt:
+      "Les arches éclairées de l’entrée, le soir, sur la salle et le bar.",
+    description:
+      "La carte de SO Restaurant Lounge : entrées, pâtes, pizzas, poissons, viandes et desserts, avec les prix en dinars tunisiens.",
     categories: [
       category("entrees", "Entrées", "menu1_1.jpg", [
         ["Salade burrata", 35],
@@ -159,6 +165,12 @@ export const menus = {
     accent: "à partager.",
     intro: "Du premier café aux petites faims qui font durer la journée.",
     theme: "chichkhan",
+    slug: "cafe",
+    brandLine: "DJERBA · DEPUIS 2002",
+    heroAlt:
+      "La façade éclairée du Chichkhan Café, le soir, sous son enseigne.",
+    description:
+      "La carte du Chichkhan Café : petits déjeuners, boissons, crêpes, douceurs et salé, avec les prix en dinars tunisiens.",
     categories: [
       category("petits-dejeuners", "Petits déjeuners", "IMG_2329.jpg", [
         [
@@ -433,8 +445,8 @@ export const normalize = (value) =>
   value
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
-    .replace(/œ/g, "oe")
-    .toLowerCase();
+    .toLowerCase()
+    .replace(/œ/g, "oe");
 export const matches = (item, category, query) =>
   normalize(query)
     .trim()

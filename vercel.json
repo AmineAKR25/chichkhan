@@ -4,5 +4,11 @@
   "installCommand": "",
   "buildCommand": "npm --prefix prototypes/chichkhan run build",
   "outputDirectory": "prototypes/chichkhan/dist",
-  "cleanUrls": true
+  "cleanUrls": true,
+  "trailingSlash": false,
+  "redirects": [
+    { "source": "/", "destination": "/restaurant", "permanent": false },
+    { "source": "/menu-1", "destination": "/restaurant", "permanent": true },
+    { "source": "/menu-2", "destination": "/cafe", "permanent": true }
+  ]
 }
