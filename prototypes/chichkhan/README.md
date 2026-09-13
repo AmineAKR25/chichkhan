@@ -33,15 +33,33 @@ python3 -m http.server 4173 --directory dist
 
 Open http://localhost:4173/restaurant/ or http://localhost:4173/cafe/. The `/` redirect is a Vercel rule, so the local static server shows a directory listing there instead. No dependencies are required. Use a current Node.js release supporting `node:test`.
 
+## Layout
+
+Everything under `src/` is edited by hand; everything under `dist/` is generated
+by `npm run build` and is git-ignored. Never edit `dist/` — the next build
+replaces it.
+
+```
+src/          hand-written source
+  menu-data.js  both catalogues, route slugs, hero framing, search normalization
+  style.css     shared visual system and responsive layouts
+  menu.js       category selection, search, history and dialog interactions
+  assets/       published WebP/JPEG derivatives (committed; see `npm run assets`)
+assets-source/  the supplied originals, never published
+build.mjs       renders both routes and copies src/ into dist/
+tests/          route independence, totals, price separation, normalization
+dist/           build output (git-ignored)
+```
+
 ## Edit
 
-- `dist/menu-data.js`: both catalogues, route slugs, hero framing metadata, source mapping and search normalization.
-- `build.mjs`: generates both route documents; run it after changing content or templates.
-- `dist/style.css`: shared visual system and responsive layouts.
-- `dist/menu.js`: category selection, search, history and dialog interactions.
-- `tests/menu.test.mjs`: route independence, catalogue totals, cross-menu price separation, normalization and static output checks.
-- `assets-source/`: the supplied originals. They live outside `dist` so they are not published.
-- `npm run assets`: regenerates the published WebP/JPEG derivatives from those originals. Needs ImageMagick and `cwebp`, so it is deliberately not part of `npm run build` — the derivatives are committed and Vercel's builder never runs it.
+- `src/menu-data.js`: both catalogues, route slugs, hero framing metadata, source mapping and search normalization.
+- `build.mjs`: generates both route documents and copies the static files; run it after changing content or templates.
+- `src/style.css`: shared visual system and responsive layouts.
+- `src/menu.js`: category selection, search, history and dialog interactions.
+- `tests/menu.test.mjs`: route independence, catalogue totals, cross-menu price separation, normalization and static output checks. `npm test` builds first, so it never reads a stale `dist/`.
+- `assets-source/`: the supplied originals. They are never copied into the output, so they are not published.
+- `npm run assets`: regenerates `src/assets/` from those originals. Needs ImageMagick and `cwebp`, so it is deliberately not part of `npm run build` — the derivatives are committed as source and Vercel's builder never runs it.
 - `.design/ux-refresh/`: design brief and validation reports.
 - `REVIEW.md`: original source provenance and unresolved source-content questions.
 

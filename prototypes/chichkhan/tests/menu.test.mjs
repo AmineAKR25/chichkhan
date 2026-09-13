@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { menus, matches } from "../dist/menu-data.js";
+import { menus, matches } from "../src/menu-data.js";
 const root = new URL("../dist/", import.meta.url);
 const find = (id, query) =>
   menus[id].categories.flatMap((c) =>
@@ -46,9 +46,12 @@ test("search handles accents, uppercase ligatures and multiple ingredient words"
   assert.equal(find(2, "zzzzzz").length, 0);
 });
 test("search matches an apostrophe typed as a straight quote or left out", () => {
-  // The catalogue spells it "Côte à l'os" with U+2019; a phone keyboard types U+0027.
+  // The catalogue spells these with U+2019; a phone keyboard types U+0027.
   for (const query of ["Côte à l’os", "Côte à l'os", "cote a los"])
     assert.equal(find(1, query).length, 1, `no match for ${query}`);
+  // "Le Healthy" is only reachable through its description.
+  for (const query of ["toast d’avocat", "toast d'avocat", "toast davocat"])
+    assert.equal(find(2, query).length, 1, `no match for ${query}`);
 });
 test("static output includes every item, price, description and category image", () => {
   for (const menu of Object.values(menus)) {

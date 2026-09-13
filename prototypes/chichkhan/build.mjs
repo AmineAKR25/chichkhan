@@ -1,13 +1,22 @@
-import { menus } from "./dist/menu-data.js";
-import { mkdirSync, writeFileSync, readFileSync } from "node:fs";
+import { menus } from "./src/menu-data.js";
+import { mkdirSync, writeFileSync, readFileSync, cpSync, rmSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
 
+const source = fileURLToPath(new URL("./src/", import.meta.url));
 const output = fileURLToPath(new URL("./dist/", import.meta.url));
+
+// dist/ is generated and git-ignored, so the build has to produce all of it:
+// the static files are copied out of src/ rather than living in the output.
+rmSync(output, { recursive: true, force: true });
+mkdirSync(output, { recursive: true });
+for (const file of ["style.css", "menu.js", "menu-data.js", "assets"])
+  cpSync(`${source}${file}`, `${output}${file}`, { recursive: true });
+
 const assetVersion = createHash("sha256")
-  .update(readFileSync(`${output}/style.css`))
-  .update(readFileSync(`${output}/menu.js`))
-  .update(readFileSync(`${output}/menu-data.js`))
+  .update(readFileSync(`${source}/style.css`))
+  .update(readFileSync(`${source}/menu.js`))
+  .update(readFileSync(`${source}/menu-data.js`))
   .digest("hex")
   .slice(0, 12);
 const escape = (value) =>

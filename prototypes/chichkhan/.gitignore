@@ -1,5 +1,8 @@
 .DS_Store
 .sites-runtime/
+
+# Build output: `npm run build` regenerates all of it from src/
+/dist/
 *.tar.gz
 *.tgz
 
