@@ -45,6 +45,11 @@ test("search handles accents, uppercase ligatures and multiple ingredient words"
   assert.equal(find(2, "pesto burrata").length, 0);
   assert.equal(find(2, "zzzzzz").length, 0);
 });
+test("search matches an apostrophe typed as a straight quote or left out", () => {
+  // The catalogue spells it "Côte à l'os" with U+2019; a phone keyboard types U+0027.
+  for (const query of ["Côte à l’os", "Côte à l'os", "cote a los"])
+    assert.equal(find(1, query).length, 1, `no match for ${query}`);
+});
 test("static output includes every item, price, description and category image", () => {
   for (const menu of Object.values(menus)) {
     const html = readFileSync(new URL(`${menu.slug}/index.html`, root), "utf8");

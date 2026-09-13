@@ -446,7 +446,8 @@ export const normalize = (value) =>
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
-    .replace(/œ/g, "oe");
+    .replace(/œ/g, "oe")
+    .replace(/['‘’ʼ´`]/g, "");
 export const matches = (item, category, query) =>
   normalize(query)
     .trim()
