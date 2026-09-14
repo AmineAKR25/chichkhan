@@ -1,27 +1,15 @@
 {
-  "name": "havana",
-  "version": "0.1.0",
+  "name": "chichkhan",
   "private": true,
+  "type": "module",
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "eslint",
-    "test": "node --test tests/*.test.mjs"
+    "build": "node build.mjs",
+    "pretest": "node build.mjs",
+    "test": "node --test tests/*.test.mjs",
+    "assets": "bash scripts/build-assets.sh",
+    "dev": "node build.mjs && node scripts/serve.mjs",
+    "preview": "node scripts/serve.mjs",
+    "start": "node scripts/serve.mjs"
   },
-  "dependencies": {
-    "next": "16.3.4",
-    "react": "19.2.8",
-    "react-dom": "19.2.8"
-  },
-  "devDependencies": {
-    "@tailwindcss/postcss": "^4",
-    "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "eslint": "^9",
-    "eslint-config-next": "16.3.4",
-    "tailwindcss": "^4",
-    "typescript": "^5"
-  }
+  "version": "1.0.0"
 }

@@ -2,13 +2,25 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": null,
   "installCommand": "",
-  "buildCommand": "npm --prefix prototypes/chichkhan run build",
-  "outputDirectory": "prototypes/chichkhan/dist",
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
   "cleanUrls": true,
   "trailingSlash": false,
   "redirects": [
-    { "source": "/", "destination": "/restaurant", "permanent": false },
-    { "source": "/menu-1", "destination": "/restaurant", "permanent": true },
-    { "source": "/menu-2", "destination": "/cafe", "permanent": true }
+    {
+      "source": "/",
+      "destination": "/restaurant",
+      "permanent": false
+    },
+    {
+      "source": "/menu-1",
+      "destination": "/restaurant",
+      "permanent": true
+    },
+    {
+      "source": "/menu-2",
+      "destination": "/cafe",
+      "permanent": true
+    }
   ]
 }

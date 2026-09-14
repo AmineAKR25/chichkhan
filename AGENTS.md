@@ -1,9 +1,10 @@
-<!-- BEGIN:nextjs-agent-rules -->
+# Chichkhan
 
-# This is NOT the Next.js you know
+This is a dependency-free static menu application, not a Next.js project.
 
-This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
-
-This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
-
-<!-- END:nextjs-agent-rules -->
+- Edit `src/`, `build.mjs` and `scripts/`; never edit generated `dist/`.
+- `/restaurant` and `/cafe` are independent. Preserve their separation and all menu content, prices and provenance. There is no homepage.
+- Keep the supplied hero photograph and colored placeholders beneath category headings.
+- Run `npm test` after changes; it builds both routes before checking them.
+- `npm run dev` builds and serves locally at http://localhost:4173. Rebuild after source edits.
+- Vercel builds from the repository root with `npm run build` and publishes `dist`.
