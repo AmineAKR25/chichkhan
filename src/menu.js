@@ -21,7 +21,56 @@ function fromHash() {
   return categories.has(hash) ? hash : menu.categories[0].id;
 }
 let selected = fromHash();
+
+// Replays on category changes and reveals rows as they enter the viewport.
+// Transforms only: every dish and description remains fully readable throughout.
+const motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)');
+const menuAnimations = new Set();
+function cancelMenuMotion() {
+  for (const animation of menuAnimations) animation.cancel();
+  menuAnimations.clear();
+}
+const revealObserver = typeof IntersectionObserver === 'function'
+  ? new IntersectionObserver((entries) => {
+    let stagger = 0;
+    for (const entry of entries) {
+      if (!entry.isIntersecting || motionPreference.matches || !entry.target.getClientRects().length) continue;
+      revealObserver.unobserve(entry.target);
+      const target = entry.target;
+      const from = target.classList.contains('section-title')
+        ? 'translateX(-12px)' : 'translateY(14px)';
+      const animation = target.animate([{ transform: from }, { transform: 'translate(0)' }], {
+        duration: target.classList.contains('category-photo') ? 650 : 460,
+        delay: Math.min(stagger++ * 40, 160),
+        easing: 'cubic-bezier(.16,1,.3,1)',
+      });
+      menuAnimations.add(animation);
+      animation.finished.then(() => menuAnimations.delete(animation), () => menuAnimations.delete(animation));
+    }
+  }, { threshold: 0.05 }) : null;
+function queueMenuMotion() {
+  if (!revealObserver || motionPreference.matches) return;
+  for (const section of sections.filter((section) => !section.hidden)) {
+    for (const element of section.querySelectorAll('.section-title,.category-photo,.dish:not([hidden])')) {
+      revealObserver.unobserve(element);
+      revealObserver.observe(element);
+    }
+  }
+  for (const element of document.querySelectorAll('.menu-introduction,.category-pagination,footer')) revealObserver.observe(element);
+}
+motionPreference.addEventListener('change', () => {
+  cancelMenuMotion();
+  revealObserver?.disconnect();
+  if (!motionPreference.matches) queueMenuMotion();
+});
+window.addEventListener('beforeprint', () => {
+  cancelMenuMotion();
+  revealObserver?.disconnect();
+});
+window.addEventListener('afterprint', queueMenuMotion);
+
 function render() {
+  cancelMenuMotion();
   const query = search.value.trim();
   let total = 0;
   for (const section of sections) {
@@ -84,6 +133,7 @@ function selectCategory(id, push = true) {
   }
   render();
   focusSection();
+  queueMenuMotion();
 }
 document.addEventListener('click', (event) => {
   const link = event.target.closest('a[data-category]');
@@ -174,4 +224,5 @@ updateInsets();
 const resizeObserver = new ResizeObserver(updateInsets);
 resizeObserver.observe(header);
 resizeObserver.observe(toolbar);
+queueMenuMotion();
 if (location.hash && location.hash !== '#main') focusSection();
