@@ -165,7 +165,8 @@ function goTo(id, { push = true, instant = false } = {}) {
   requestAnimationFrame(() => {
     if (heading) {
       heading.focus({ preventScroll: true });
-      heading.scrollIntoView({ block: 'start', behavior: instant ? 'instant' : scrollBehavior() });
+      // Scroll the whole section: on phones the heading sits beside a taller image.
+      heading.closest('.menu-section').scrollIntoView({ block: 'start', behavior: instant ? 'instant' : scrollBehavior() });
     } else {
       window.scrollTo({ top: target.getBoundingClientRect().top + window.scrollY - toolbar.offsetHeight - 16, behavior: instant ? 'instant' : scrollBehavior() });
     }
@@ -228,7 +229,7 @@ function restoreOrigin() {
   if (origin?.scrolledIntoMenu) {
     spyLockedUntil = performance.now() + 200;
     markActive(origin.id);
-    requestAnimationFrame(() => document.querySelector(`#heading-${origin.id}`).scrollIntoView({ block: 'start', behavior: 'instant' }));
+    requestAnimationFrame(() => document.querySelector(`#heading-${origin.id}`).closest('.menu-section').scrollIntoView({ block: 'start', behavior: 'instant' }));
   }
 }
 function reset() {
