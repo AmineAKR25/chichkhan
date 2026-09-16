@@ -1,100 +1,96 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { menus, matches } from "../src/menu-data.js";
-const root = new URL("../dist/", import.meta.url);
-const find = (id, query) =>
-  menus[id].categories.flatMap((c) =>
-    c.items.filter((i) => matches(i, c.name, query)),
-  );
+import { matches } from "../src/search.js";
+import { shapeMenu } from "../lib/db.js";
+import { imageUrl } from "../lib/images.js";
+import { renderMenuPage, suggestionsFor, money } from "../lib/render.js";
+import { handleMenuRequest } from "../lib/handler.js";
+import { catalogue, rows } from "./helpers/catalogue.mjs";
 
-test("each route is self-contained and carries the entrance hero", () => {
-  const names = Object.values(menus).map((m) => m.name);
+const restaurant = catalogue("restaurant");
+const cafe = catalogue("cafe");
+const menus = { restaurant, cafe };
+const find = (menu, query) => menu.categories.flatMap((c) => c.items.filter((i) => matches(i, c.name, query)));
+const encoded = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+const schema = readFileSync(new URL("../db/schema.sql", import.meta.url), "utf8");
+
+// --- Database schema and seed ------------------------------------------------
+
+test("the schema separates venues with an enum and venue-scoped foreign keys", () => {
+  assert.match(schema, /create type venue as enum \('restaurant', 'cafe'\)/);
+  assert.match(schema, /foreign key \(venue, category_id\) references categories \(venue, id\)/);
+  assert.match(schema, /foreign key \(venue, group_id\) references category_groups \(venue, id\)/);
+  assert.match(schema, /price_millimes\s+integer not null check \(price_millimes >= 0\)/);
+});
+
+test("the seed keeps both catalogues complete", () => {
+  assert.deepEqual(
+    Object.values(menus).map((m) => [m.categories.length, m.categories.reduce((n, c) => n + c.items.length, 0)]),
+    [[11, 73], [20, 150]],
+  );
+  assert.equal(rows.items.filter((i) => i.category_id === undefined).length, 0, "every item finds its category");
+  assert.equal(rows.categories.filter((c) => c.group_id === null).length, 0, "every category finds its group");
+  assert.deepEqual(Object.values(menus).map((m) => m.categories.flatMap((c) => c.items).filter((i) => i.isHouse).length), [4, 9]);
+});
+
+test("overlapping pizza names retain the separate venue prices", () => {
+  assert.equal(find(restaurant, "Margherita")[0].millimes, 19000);
+  assert.equal(find(cafe, "Margherita")[0].millimes, 15000);
+});
+
+// --- Search ---------------------------------------------------------------------
+
+test("search handles accents, uppercase ligatures and multiple ingredient words", () => {
+  assert.equal(find(cafe, "BŒUF EFFILOCHE").length, 2);
+  assert.ok(find(cafe, "crepe salee").length > 0);
+  assert.equal(find(restaurant, "pesto burrata").length, 1);
+  assert.equal(find(cafe, "pesto burrata").length, 0);
+  assert.equal(find(cafe, "zzzzzz").length, 0);
+});
+
+test("search matches an apostrophe typed as a straight quote or left out", () => {
+  for (const query of ["Côte à l’os", "Côte à l'os", "cote a los"])
+    assert.equal(find(restaurant, query).length, 1, `no match for ${query}`);
+  for (const query of ["toast d’avocat", "toast d'avocat", "toast davocat"])
+    assert.equal(find(cafe, query).length, 1, `no match for ${query}`);
+});
+
+test("search suggestions come from the venue's own menu and each finds several dishes", () => {
   for (const menu of Object.values(menus)) {
-    const html = readFileSync(new URL(`${menu.slug}/index.html`, root), "utf8");
-    for (const other of names.filter((n) => n !== menu.name))
-      assert.ok(!html.includes(other), `${menu.slug} names ${other}`);
-    for (const slug of ["restaurant", "cafe", "menu-1", "menu-2"])
-      if (slug !== menu.slug)
-        assert.ok(!html.includes(`/${slug}`), `${menu.slug} links to /${slug}`);
-    assert.ok(!/href="\/"/.test(html), "no link back to a homepage");
-    assert.ok(html.includes('class="hero-photo"'));
-    assert.ok(html.includes(`alt="${menu.heroAlt.replace(/'/g, "&#39;")}"`));
+    const words = suggestionsFor(menu.categories);
+    assert.ok(words.length >= 4, `${menu.venue.slug} has ${words.length} suggestions`);
+    for (const word of words) assert.ok(find(menu, word).length >= 3, `${menu.venue.slug}: ${word}`);
   }
 });
-test("both catalogues retain their category and item totals", () => {
-  assert.deepEqual(
-    Object.values(menus).map((m) => [
-      m.categories.length,
-      m.categories.reduce((n, c) => n + c.items.length, 0),
-    ]),
-    [
-      [11, 73],
-      [20, 150],
-    ],
-  );
+
+// --- Rendering --------------------------------------------------------------------
+
+test("each page names only its own venue and links nowhere else", () => {
+  for (const [slug, menu] of Object.entries(menus)) {
+    const html = renderMenuPage(menu);
+    const other = Object.values(menus).find((m) => m !== menu).venue.name;
+    assert.ok(!html.includes(other), `${slug} names ${other}`);
+    for (const route of ["restaurant", "cafe", "menu-1", "menu-2"])
+      if (route !== slug) assert.ok(!html.includes(`/${route}`), `${slug} links to /${route}`);
+    assert.ok(!/href="\/"/.test(html), "no link back to a homepage");
+    assert.ok(html.includes(`data-menu="${slug}"`));
+  }
 });
-test("overlapping pizza names retain the separate menu prices", () => {
-  assert.equal(find(1, "Margherita")[0].price, 19);
-  assert.equal(find(2, "Margherita")[0].price, 15);
-});
-test("search handles accents, uppercase ligatures and multiple ingredient words", () => {
-  assert.equal(find(2, "BŒUF EFFILOCHE").length, 2);
-  assert.ok(find(2, "crepe salee").length > 0);
-  assert.equal(find(1, "pesto burrata").length, 1);
-  assert.equal(find(2, "pesto burrata").length, 0);
-  assert.equal(find(2, "zzzzzz").length, 0);
-});
-test("search matches an apostrophe typed as a straight quote or left out", () => {
-  // The catalogue spells these with U+2019; a phone keyboard types U+0027.
-  for (const query of ["Côte à l’os", "Côte à l'os", "cote a los"])
-    assert.equal(find(1, query).length, 1, `no match for ${query}`);
-  // "Le Healthy" is only reachable through its description.
-  for (const query of ["toast d’avocat", "toast d'avocat", "toast davocat"])
-    assert.equal(find(2, query).length, 1, `no match for ${query}`);
-});
-test("static output includes every item, price, description and category image", () => {
+
+test("pages include every item, price, description and a placeholder per category", () => {
   for (const menu of Object.values(menus)) {
-    const html = readFileSync(new URL(`${menu.slug}/index.html`, root), "utf8");
-    const encoded = (s) =>
-      String(s).replace(
-        /[&<>"']/g,
-        (c) =>
-          ({
-            "&": "&amp;",
-            "<": "&lt;",
-            ">": "&gt;",
-            '"': "&quot;",
-            "'": "&#39;",
-          })[c],
-      );
-    assert.equal(
-      (html.match(/class="category-photo"/g) || []).length,
-      menu.categories.length,
-    );
-    assert.equal(
-      (html.match(/class="dish"/g) || []).length,
-      menu.categories.flatMap((c) => c.items).length,
-    );
+    const html = renderMenuPage(menu);
+    assert.equal((html.match(/class="category-photo"/g) || []).length, menu.categories.length);
+    assert.equal((html.match(/class="dish"/g) || []).length, menu.categories.flatMap((c) => c.items).length);
     for (const category of menu.categories) {
-      const section = html
-        .split(`class="menu-section" id="${category.id}"`)[1]
-        .split("</section>")[0];
-      assert.ok(
-        section.indexOf("</h2>") < section.indexOf('class="category-photo"'),
-      );
+      const section = html.split(`class="menu-section" id="${category.slug}"`)[1].split("</section>")[0];
+      const text = section.replace(/<[^>]+>/g, "");
+      assert.ok(section.indexOf("</h2>") < section.indexOf('class="category-photo'));
       for (const item of category.items) {
         assert.ok(section.includes(encoded(item.name)));
-        assert.ok(
-          section.includes(
-            item.price.toLocaleString("fr-TN", {
-              minimumFractionDigits: 3,
-              maximumFractionDigits: 3,
-            }),
-          ),
-        );
-        if (item.description)
-          assert.ok(section.includes(encoded(item.description)));
+        assert.ok(text.includes(money(item.millimes)));
+        if (item.description) assert.ok(section.includes(encoded(item.description)));
       }
     }
   }
@@ -102,22 +98,120 @@ test("static output includes every item, price, description and category image",
 
 test("dish descriptions remain visible without an expansion control", () => {
   for (const menu of Object.values(menus)) {
-    const html = readFileSync(new URL(`${menu.slug}/index.html`, root), "utf8");
-    assert.ok(!/<details\b|<summary\b/.test(html), `${menu.slug} hides a description in a disclosure`);
-    const descriptions = menu.categories.flatMap((cat) => cat.items).filter((item) => item.description);
-    const rows = [...html.matchAll(/<article class="dish"[^>]*>([\s\S]*?)<\/article>/g)].map((match) => match[1]);
-    assert.equal(rows.filter((row) => /<p>/.test(row)).length, descriptions.length);
-    assert.ok(rows.every((row) => !/<p[^>]+(?:hidden|line-clamp|aria-hidden)/.test(row)));
+    const html = renderMenuPage(menu);
+    assert.ok(!/<details\b|<summary\b/.test(html));
+    const described = menu.categories.flatMap((c) => c.items).filter((i) => i.description);
+    const rows = [...html.matchAll(/<article class="dish"[^>]*>([\s\S]*?)<\/article>/g)].map((m) => m[1]);
+    assert.equal(rows.filter((row) => /<p>/.test(row)).length, described.length);
   }
 });
 
-test("both category directories preserve every category exactly once", () => {
+test("category directories and the rail list every category once, in order", () => {
   for (const menu of Object.values(menus)) {
-    const html = readFileSync(new URL(`${menu.slug}/index.html`, root), "utf8");
-    for (const className of ['category-nav', 'dialog-categories']) {
+    const html = renderMenuPage(menu);
+    const ids = menu.categories.map((c) => c.slug);
+    for (const className of ["category-nav", "dialog-categories"]) {
       const nav = html.match(new RegExp(`<nav[^>]*class="${className}"[^>]*>([\\s\\S]*?)</nav>`))[1];
-      const ids = [...nav.matchAll(/data-category="([^"]+)"/g)].map((match) => match[1]);
-      assert.deepEqual(ids, ['all', ...menu.categories.map((category) => category.id)]);
+      assert.deepEqual([...nav.matchAll(/data-category="([^"]+)"/g)].map((m) => m[1]), ["all", ...ids]);
+    }
+    const rail = html.match(/<nav[^>]*class="category-chips"[^>]*>([\s\S]*?)<\/nav>/)[1];
+    assert.deepEqual([...rail.matchAll(/data-category="([^"]+)"/g)].map((m) => m[1]), ids);
+  }
+});
+
+test("categories without descriptions render as a compact price list", () => {
+  for (const menu of Object.values(menus)) {
+    const html = renderMenuPage(menu);
+    for (const category of menu.categories) {
+      const section = html.split(`class="menu-section" id="${category.slug}"`)[1].split("</section>")[0];
+      assert.equal(section.includes('class="dish-grid is-compact"'), category.items.every((i) => !i.description));
     }
   }
+});
+
+test("the embedded data is this venue's only and cannot close its script tag", () => {
+  const hostile = shapeMenu(
+    [{ slug: "cafe", name: "Café", title: "Café", hero_focus_y: 50 }], [],
+    [{ id: 1, group_id: null, slug: "x", name: "</script><b>", note: "", image_key: null }],
+    [{ id: 7, category_id: 1, name: "</script>", description: "", price_millimes: 1000, is_house: false }],
+  );
+  const html = renderMenuPage(hostile);
+  const json = html.match(/<script type="application\/json" id="menu-data">([\s\S]*?)<\/script>/)[1];
+  assert.ok(!json.includes("<"));
+  assert.equal(JSON.parse(json).categories[0].items[0].name, "</script>");
+  assert.equal(JSON.parse(renderMenuPage(cafe).match(/id="menu-data">([\s\S]*?)<\/script>/)[1]).categories.length, 20);
+});
+
+// --- Images from Cloudflare R2 ------------------------------------------------------
+
+test("image URLs are built from the R2 base and a safe object key", () => {
+  assert.equal(imageUrl("https://images.example.com", "categories/cafe/glaces.webp"), "https://images.example.com/categories/cafe/glaces.webp");
+  assert.equal(imageUrl("https://images.example.com/menu/", "a b/é.webp"), "https://images.example.com/menu/a%20b/%C3%A9.webp");
+  assert.equal(imageUrl("http://localhost:9000", "x.webp"), "http://localhost:9000/x.webp");
+  for (const [base, key] of [[undefined, "x.webp"], ["https://images.example.com", null], ["not a url", "x.webp"], ["http://images.example.com", "x.webp"], ["https://images.example.com", "../x.webp"], ["https://images.example.com", "/x.webp"]])
+    assert.equal(imageUrl(base, key), null, `${base} ${key}`);
+});
+
+test("without images every frame keeps its coloured placeholder", () => {
+  const html = renderMenuPage(cafe, { imageBaseUrl: "https://images.example.com" });
+  assert.ok(!/<img/.test(html));
+  assert.equal((html.match(/--photo-color:#/g) || []).length, 20);
+});
+
+test("with R2 configured, images render and fall back to the placeholder on error", () => {
+  const html = renderMenuPage(catalogue("cafe", { imageKeys: true }), { imageBaseUrl: "https://images.example.com" });
+  assert.ok(html.includes('src="https://images.example.com/venues/cafe/hero.webp"'));
+  assert.ok(html.includes('src="https://images.example.com/venues/cafe/logo.webp"'));
+  assert.ok(html.includes('src="https://images.example.com/categories/cafe/glaces.webp"'));
+  assert.equal((html.match(/class="category-photo has-image"/g) || []).length, 20);
+  assert.equal((html.match(/<img[^>]+onerror=/g) || []).length, 22);
+  assert.ok(html.includes("object-position:50% 17%"));
+});
+
+// --- Request handling ---------------------------------------------------------------
+
+test("the venue comes from the URL and is the only venue queried", async () => {
+  const asked = [];
+  const response = await handleMenuRequest("cafe", { env: { DATABASE_URL: "postgres://x" }, load: async (venue) => (asked.push(venue), cafe) });
+  assert.deepEqual(asked, ["cafe"]);
+  assert.equal(response.status, 200);
+  assert.match(response.headers["Cache-Control"], /s-maxage=60/);
+  assert.ok(response.body.includes("Chichkhan"));
+});
+
+test("an unknown venue is a 404 and never reaches the database", async () => {
+  let called = false;
+  for (const venue of ["bar", "", null, "cafe;drop table venues"]) {
+    const response = await handleMenuRequest(venue, { load: async () => { called = true; } });
+    assert.equal(response.status, 404);
+  }
+  assert.equal(called, false);
+});
+
+test("without a database connection nothing from the menu is shown", async () => {
+  const names = Object.values(menus).flatMap((m) => [m.venue.name, ...m.categories.map((c) => c.name)]);
+  const original = console.error;
+  console.error = () => {};
+  try {
+    for (const env of [{}, { DATABASE_URL: "not-a-connection-string" }]) {
+      const response = await handleMenuRequest("restaurant", { env });
+      assert.equal(response.status, 503);
+      assert.equal(response.headers["Cache-Control"], "no-store");
+      for (const name of names) assert.ok(!response.body.includes(encoded(name)), `shows ${name}`);
+      assert.ok(!/class="dish"|menu-data|category-photo/.test(response.body));
+    }
+    const failing = await handleMenuRequest("cafe", { env: { DATABASE_URL: "postgres://x" }, load: async () => { throw new Error("timeout"); } });
+    assert.equal(failing.status, 503);
+  } finally {
+    console.error = original;
+  }
+});
+
+test("a venue missing from the database is a 404; an empty venue shows no products", async () => {
+  assert.equal((await handleMenuRequest("cafe", { load: async () => null })).status, 404);
+  const empty = shapeMenu([{ slug: "cafe", name: "Chichkhan Café", title: "Chichkhan", hero_focus_y: 17 }], [], [{ id: 1, group_id: null, slug: "vide", name: "Vide", note: "", image_key: null }], []);
+  assert.equal(empty.categories.length, 0);
+  const html = renderMenuPage(empty);
+  assert.ok(html.includes("La carte arrive bientôt."));
+  assert.ok(!/class="dish"|menu-data/.test(html));
 });

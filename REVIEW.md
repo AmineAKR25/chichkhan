@@ -1,6 +1,6 @@
 # Chichkhan Djerba — prototype 1
 
-Historical baseline and source review. For the current UI and validation, see `.design/ux-refresh/DESIGN_REVIEW.md`.
+Historical baseline and source review. Menu content now lives in Neon (`db/seed.sql` carries the provenance in `categories.source`); for the current architecture see README.md.
 
 Chichkhan now occupies the repository root. The previous Havana application has been removed from the working project; its history remains in Git.
 

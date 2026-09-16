@@ -1,11 +1,17 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": null,
-  "installCommand": "",
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "cleanUrls": true,
   "trailingSlash": false,
+  "regions": ["fra1"],
+  "rewrites": [
+    {
+      "source": "/:venue(restaurant|cafe)",
+      "destination": "/api/menu?venue=:venue"
+    }
+  ],
   "redirects": [
     {
       "source": "/",
