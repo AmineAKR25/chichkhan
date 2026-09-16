@@ -4,7 +4,7 @@
 begin;
 
 insert into venues (slug, name, title, subtitle, eyebrow, description, hero_image_alt, hero_focus_y) values
-  ('restaurant', 'SO Restaurant Lounge', 'SO', 'Restaurant Lounge', 'Djerba', 'La carte de SO Restaurant Lounge : entrées, pâtes, pizzas, poissons, viandes et desserts, avec les prix en dinars tunisiens.', 'Les arches éclairées de l’entrée, le soir, sur la salle et le bar.', 98),
+  ('restaurant', 'SO Restaurant Lounge', 'SO', 'Restaurant Lounge', 'Chichkhan Djerba', 'La carte de SO Restaurant Lounge : entrées, pâtes, pizzas, poissons, viandes et desserts, avec les prix en dinars tunisiens.', 'Les arches éclairées de l’entrée, le soir, sur la salle et le bar.', 98),
   ('cafe', 'Chichkhan Café', 'Chichkhan', 'Café', 'Djerba · depuis 2002', 'La carte du Chichkhan Café : petits déjeuners, boissons, crêpes, douceurs et salé, avec les prix en dinars tunisiens.', 'La façade éclairée du Chichkhan Café, le soir, sous son enseigne.', 17);
 
 insert into category_groups (venue, name, position) values
