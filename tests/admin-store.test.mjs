@@ -149,7 +149,7 @@ test("editing a product validates strictly and records price changes in millimes
     const details = (await pg.query("select details from admin_audit where action = 'price'")).rows[0].details;
     assert.deepEqual(details, { before: 32000, after: 18500 });
 
-    for (const [price, pattern] of [["-3", /négatif/], ["12.5000", /trois décimales/], ["abc", /dinars/], ["", /Saisissez un prix/], ["10000", /inférieur à 10000/]]) {
+    for (const [price, pattern] of [["-3", /négatif/], ["12.5000", /trois décimales/], ["abc", /dinars/], ["", /Saisissez un prix/], ["10000", /inférieur à 10 000/]]) {
       await assert.rejects(run(db, "product.update", "restaurant", { ...input, price }), (error) => {
         assert.equal(error.status, 400);
         assert.match(error.fields.price, pattern);
@@ -231,7 +231,7 @@ test("duplicating a product makes a hidden copy right after the original", async
     const rows = productsIn(result.state, product.categoryId);
     const index = rows.findIndex((p) => p.id === product.id);
     assert.equal(rows[index + 1].id, result.id);
-    assert.equal(rows[index + 1].name, "Salade César (copy)");
+    assert.equal(rows[index + 1].name, "Salade César (copie)");
     assert.equal(rows[index + 1].isVisible, false);
     assert.equal(rows[index + 1].millimes, product.millimes);
     assert.ok(positionsAreSequential(rows));
@@ -244,20 +244,20 @@ test("a deleted product can be undone, returning with the same id and place", as
     const category = categoryBySlug(state, "jus");
     const product = productsIn(state, category.id)[2];
     const deleted = await run(db, "product.delete", "cafe", { id: product.id });
-    assert.equal(deleted.message, `${product.name} deleted from the Café menu.`);
+    assert.equal(deleted.message, `${product.name} a été supprimé du menu Café.`);
     assert.ok(deleted.undo.id > 0);
     assert.ok(!deleted.state.products.some((p) => p.id === product.id));
     assert.ok(positionsAreSequential(productsIn(deleted.state, category.id)));
     // Undo is scoped to the venue as well.
     await rejects(run(db, "undo", "restaurant", { deletionId: deleted.undo.id }), 410);
     const restored = await run(db, "undo", "cafe", { deletionId: deleted.undo.id });
-    assert.equal(restored.message, `“${product.name}” restored.`);
+    assert.equal(restored.message, `“${product.name}” a été restauré.`);
     assert.equal(productsIn(restored.state, category.id)[2].id, product.id);
-    await rejects(run(db, "undo", "cafe", { deletionId: deleted.undo.id }), 409, /already been restored/);
+    await rejects(run(db, "undo", "cafe", { deletionId: deleted.undo.id }), 409, /a déjà été restauré/);
 
     const again = await run(db, "product.delete", "cafe", { id: product.id });
     await pg.query("update admin_deletions set created_at = now() - make_interval(mins => $1) where id = $2", [UNDO_MINUTES + 1, again.undo.id]);
-    await rejects(run(db, "undo", "cafe", { deletionId: again.undo.id }), 410, /too late/);
+    await rejects(run(db, "undo", "cafe", { deletionId: again.undo.id }), 410, /trop tard pour annuler/);
   });
 });
 
@@ -268,10 +268,10 @@ test("deleting a category can move its products elsewhere, in one transaction, a
     const target = categoryBySlug(state, "cocktails");
     const moving = productsIn(state, source.id);
     const targetBefore = productsIn(state, target.id);
-    await rejects(run(db, "category.delete", "cafe", { id: source.id, mode: "reassign", targetCategoryId: target.id, expectedProductCount: moving.length + 1 }), 409, /review your choice/);
+    await rejects(run(db, "category.delete", "cafe", { id: source.id, mode: "reassign", targetCategoryId: target.id, expectedProductCount: moving.length + 1 }), 409, /Vérifiez à nouveau votre choix/);
     await rejects(run(db, "category.delete", "cafe", { id: source.id, expectedProductCount: moving.length }), 400);
     const result = await run(db, "category.delete", "cafe", { id: source.id, mode: "reassign", targetCategoryId: target.id, expectedProductCount: moving.length });
-    assert.equal(result.message, `Category “Mojitos” deleted. Its ${moving.length} products moved to “Cocktails”.`);
+    assert.equal(result.message, `La catégorie “Mojitos” a été supprimée. Ses ${moving.length} produits ont été déplacés vers “Cocktails”.`);
     const after = productsIn(result.state, target.id);
     assert.deepEqual(after.map((p) => p.id), [...targetBefore, ...moving].map((p) => p.id));
     assert.ok(positionsAreSequential(after));
@@ -293,7 +293,7 @@ test("permanently deleting a category needs explicit confirmation; undo restores
     const items = productsIn(state, sauces.id);
     await rejects(run(db, "category.delete", "restaurant", { id: sauces.id, mode: "purge", expectedProductCount: items.length }), 400, /Confirm/);
     const result = await run(db, "category.delete", "restaurant", { id: sauces.id, mode: "purge", confirm: true, expectedProductCount: items.length });
-    assert.match(result.message, /Category “Sauces” and its \d+ products deleted\./);
+    assert.match(result.message, /La catégorie “Sauces” et ses \d+ produits ont été supprimés\./);
     assert.equal((await pg.query("select count(*)::int n from menu_items where category_id = $1", [sauces.id])).rows[0].n, 0);
     const undone = await run(db, "undo", "restaurant", { deletionId: result.undo.id });
     assert.deepEqual(productsIn(undone.state, sauces.id).map((p) => [p.id, p.name, p.millimes]), items.map((p) => [p.id, p.name, p.millimes]));
@@ -306,9 +306,9 @@ test("a group is only deleted once empty; its categories are never deleted with 
     const state = await loadVenueState(db, "cafe");
     const sweets = state.groups.find((g) => g.name === "Les douceurs");
     const members = state.categories.filter((c) => c.groupId === sweets.id);
-    await rejects(run(db, "group.delete", "cafe", { id: sweets.id }), 409, /Move them to No group/);
+    await rejects(run(db, "group.delete", "cafe", { id: sweets.id }), 409, /Déplacez-les vers Sans groupe/);
     const ungrouped = await run(db, "group.ungroup", "cafe", { id: sweets.id });
-    assert.equal(ungrouped.message, `${members.length} categories moved from “Les douceurs” to No group. They stay on the menu without a group heading.`);
+    assert.equal(ungrouped.message, `Déplacement de ${members.length} catégories de “Les douceurs” vers Sans groupe. Elles restent dans le menu sans titre de groupe.`);
     assert.equal(ungrouped.state.categories.length, 20);
     assert.deepEqual(ungrouped.state.categories.slice(-members.length).map((c) => c.id), members.map((c) => c.id));
     const deleted = await run(db, "group.delete", "cafe", { id: sweets.id });
@@ -321,11 +321,11 @@ test("a group is only deleted once empty; its categories are never deleted with 
 
 test("group names are validated and unique within a venue", async () => {
   await withDb(async ({ db }) => {
-    await assert.rejects(run(db, "group.create", "cafe", { name: "à BOIRE" }), (error) => /already a group/.test(error.fields.name));
+    await assert.rejects(run(db, "group.create", "cafe", { name: "à BOIRE" }), (error) => /existe déjà/.test(error.fields.name));
     const created = await run(db, "group.create", "restaurant", { name: "Pour commencer" });
     assert.equal(created.state.groups.at(-1).name, "Pour commencer");
     const renamed = await run(db, "group.rename", "restaurant", { id: created.id, name: "Apéritifs" });
-    assert.equal(renamed.message, "Group “Pour commencer” renamed to “Apéritifs”.");
+    assert.equal(renamed.message, "Le groupe “Pour commencer” a été renommé en “Apéritifs”.");
     await assert.rejects(run(db, "group.rename", "restaurant", { id: created.id, name: "" }), (error) => Boolean(error.fields.name));
   });
 });
@@ -342,7 +342,7 @@ test("photo keys: a replaced or removed key is released only when nothing refers
     // The copy still shows the old photo, so it must stay in storage.
     assert.equal(await isImageKeyReferenced(db, "products/cafe/1-aaaaaaaaaa.webp"), true);
     const removed = await run(db, "image.remove", "cafe", { target: "product", id: copy.id });
-    assert.match(removed.message, /placeholder/);
+    assert.match(removed.message, /fond coloré/);
     assert.equal(await isImageKeyReferenced(db, "products/cafe/1-aaaaaaaaaa.webp"), false);
     // A deleted product keeps its photo while the deletion can be undone.
     const deleted = await run(db, "product.delete", "cafe", { id: product.id });
@@ -378,7 +378,7 @@ test("the page header changes field by field, is checked, logged, and stays in i
   await withDb(async ({ db, pg }) => {
     const restaurantBefore = (await publicMenu(pg, "restaurant")).venue;
     const saved = await run(db, "venue.update", "cafe", { title: "Chichkhan", subtitle: "Café & Salon", eyebrow: "Djerba", name: "Chichkhan Café", heroImageAlt: "La façade" });
-    assert.equal(saved.message, "Header of the Café page updated (second line, small line above the name, main photo description).");
+    assert.equal(saved.message, "L’en-tête de la page Café a été mis à jour (deuxième ligne, petite ligne au-dessus du nom, description de la photo principale).");
     assert.equal(saved.state.venue.subtitle, "Café & Salon");
     const page = (await publicMenu(pg, "cafe")).venue;
     assert.deepEqual([page.subtitle, page.eyebrow, page.heroImageAlt], ["Café & Salon", "Djerba", "La façade"]);
@@ -386,15 +386,15 @@ test("the page header changes field by field, is checked, logged, and stays in i
 
     // The photo window sends only the position; the texts stay as they are.
     const moved = await run(db, "venue.update", "cafe", { heroFocusY: 100 });
-    assert.equal(moved.message, "The main photo of the Café page now shows its bottom part.");
+    assert.equal(moved.message, "La photo principale de la page Café affiche maintenant sa partie basse.");
     assert.equal(moved.state.venue.heroFocusY, 100);
     assert.equal(moved.state.venue.subtitle, "Café & Salon");
-    assert.equal((await run(db, "venue.update", "cafe", { heroFocusY: 100 })).message, "No changes to save.");
+    assert.equal((await run(db, "venue.update", "cafe", { heroFocusY: 100 })).message, "Aucune modification à enregistrer.");
 
     for (const [input, field] of [[{ title: "  " }, "title"], [{ name: "" }, "name"], [{ heroFocusY: 101 }, "heroFocusY"], [{ heroFocusY: "top" }, "heroFocusY"], [{ subtitle: "x".repeat(61) }, "subtitle"]]) {
       await assert.rejects(run(db, "venue.update", "cafe", input), (error) => Boolean(error.fields?.[field]), field);
     }
-    await rejects(run(db, "venue.update", "cafe", {}), 400, /nothing to save/);
+    await rejects(run(db, "venue.update", "cafe", {}), 400, /Aucune modification à enregistrer/);
     await rejects(run(db, "venue.update", "bar", { title: "X" }), 404);
     const history = await loadAudit(db, "cafe");
     assert.deepEqual(history.entries.map((entry) => entry.action), ["update", "update"]);

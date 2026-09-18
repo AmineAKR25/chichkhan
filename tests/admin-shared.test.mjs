@@ -10,8 +10,8 @@ test("prices are read strictly into integer millimes", () => {
   for (const input of ["", " ", "-1", "−2", "1 000", "1.000.000", "12.5000", "abc", "1e3", "0x10", "12..5", "12.", ".5", "10000", "12,500,000", null, undefined]) {
     assert.ok(parsePrice(input).error, `${input} should be rejected`);
   }
-  assert.match(parsePrice("-4").error, /negative/);
-  assert.match(parsePrice("12.5000").error, /three decimals/);
+  assert.match(parsePrice("-4").error, /négatif/);
+  assert.match(parsePrice("12.5000").error, /trois décimales/);
 });
 
 test("prices display as Tunisian dinars with three decimals", () => {
