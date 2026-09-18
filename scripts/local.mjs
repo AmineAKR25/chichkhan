@@ -333,7 +333,7 @@ async function setup({ force = false } = {}) {
 async function printSignIn(s) {
   const port = process.env.PORT || 4173;
   const link = `http://localhost:${port}/owner-access/${await createAccessLinkToken(s.linkSecret, null)}`;
-  say(`\nLocal admin sign-in (this machine only):\n  ${link}\n  username: ${s.adminUsername}\n  password: ${s.adminPassword}\n`);
+  say(`\nLocal admin sign-in (this machine only):\n  ${link}\n  password: ${s.adminPassword}\n`);
   say("  http://localhost:" + port + "/admin answers 404 until you open that link and sign in.\n");
 }
 

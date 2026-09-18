@@ -26,8 +26,10 @@ test("the admin is locked until every setting is present and valid", () => {
   assert.equal(config.ready, true);
   const empty = adminConfig({});
   assert.equal(empty.ready, false);
-  assert.deepEqual(empty.missing, ["ADMIN_USERNAME", "ADMIN_PASSWORD_HASH", "ADMIN_SESSION_SECRET", "ADMIN_LINK_SECRET"]);
-  const weak = adminConfig({ ADMIN_USERNAME: "owner", ADMIN_PASSWORD_HASH: "hunter2", ADMIN_SESSION_SECRET: "short", ADMIN_LINK_SECRET: "short" });
+  // ADMIN_USERNAME is only the name in the history, so it never blocks anything.
+  assert.deepEqual(empty.missing, ["ADMIN_PASSWORD_HASH", "ADMIN_SESSION_SECRET", "ADMIN_LINK_SECRET"]);
+  assert.equal(empty.username, "Propriétaire", "a name is always available for the audit trail");
+  const weak = adminConfig({ ADMIN_PASSWORD_HASH: "hunter2", ADMIN_SESSION_SECRET: "short", ADMIN_LINK_SECRET: "short" });
   assert.equal(weak.ready, false);
   assert.equal(weak.problems.length, 3);
   // A link secret on its own is not enough to open anything.

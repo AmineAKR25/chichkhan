@@ -59,8 +59,8 @@ async function openLink(call, token) {
   const cookie = response.headers.get("set-cookie");
   return { response, cookie: cookie ? cookie.split(";")[0] : "" };
 }
-async function signIn(call, { username = "owner", pass = password, next = "", link } = {}) {
-  const body = new URLSearchParams({ username, password: pass, next });
+async function signIn(call, { pass = password, next = "", link } = {}) {
+  const body = new URLSearchParams({ password: pass, next });
   const cookie = link === undefined ? (await openLink(call)).cookie : link;
   return call("/api/admin?page=access-password", {
     method: "POST",
@@ -184,14 +184,16 @@ test("the owner link is the only door, and it opens the password screen only", a
   }
 });
 
-test("sign-in checks the password, sets a signed cookie and only returns to admin pages", async () => {
+test("sign-in checks the password alone, sets a signed cookie and only returns to admin pages", async () => {
   const { call, close } = await setup();
   try {
     const wrong = await signIn(call, { pass: "wrong password here" });
     assert.equal(wrong.status, 401);
     assert.equal(wrong.headers.get("set-cookie"), null);
-    assert.match(await wrong.text(), /L’identifiant ou le mot de passe est incorrect/);
-    assert.equal((await signIn(call, { username: "admin" })).status, 401);
+    const page = await wrong.text();
+    assert.match(page, /Le mot de passe est incorrect/);
+    // Only a password is ever asked for.
+    assert.ok(!/name="username"/.test(page), "the form has no identity field");
 
     const ok = await signIn(call, { next: "/admin/cafe?category=3" });
     assert.equal(ok.status, 303);
@@ -202,7 +204,7 @@ test("sign-in checks the password, sets a signed cookie and only returns to admi
       assert.equal((await signIn(call, { next })).headers.get("location"), "/admin", next);
     }
     const link = (await openLink(call)).cookie;
-    const crossSite = await call("/api/admin?page=access-password", { method: "POST", headers: { origin: "https://evil.example", host: "localhost:4173", cookie: link, "content-type": "application/x-www-form-urlencoded" }, body: `username=owner&password=${encodeURIComponent(password)}` });
+    const crossSite = await call("/api/admin?page=access-password", { method: "POST", headers: { origin: "https://evil.example", host: "localhost:4173", cookie: link, "content-type": "application/x-www-form-urlencoded" }, body: `password=${encodeURIComponent(password)}` });
     assert.equal(crossSite.status, 403);
     assert.equal(crossSite.headers.get("set-cookie"), null);
 

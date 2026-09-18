@@ -63,7 +63,8 @@ try {
   console.log(`ADMIN_PASSWORD_HASH=${hash}`);
   console.log(`ADMIN_SESSION_SECRET=${randomBytes(32).toString("base64url")}`);
   console.log(`ADMIN_LINK_SECRET=${randomBytes(32).toString("base64url")}`);
-  console.log("\nAlso set ADMIN_USERNAME. Changing the hash or the session secret signs everyone out;");
+  console.log("\nADMIN_USERNAME is optional: only the name the history files edits under.");
+  console.log("Changing the hash or the session secret signs everyone out;");
   console.log("changing the link secret invalidates every owner link ever issued.");
   console.log("\nThen print an owner link with:\n\n  npm run admin:link -- https://your-site.com\n");
 } catch (error) {
