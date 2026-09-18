@@ -19,8 +19,11 @@ const types = {
 // Vercel refuses function request bodies above 4.5 MB; so does this server.
 const MAX_BODY = 4.5 * 1024 * 1024;
 
-// Supports the "/:name(a|b)" and "(.*)" forms used in vercel.json.
-const toPattern = (source) => new RegExp(`^${source.replace(/:(\w+)\(([^)]+)\)/g, "(?<$1>$2)")}$`);
+// Supports the "/:name(a|b)", bare "/:name" and "(.*)" forms used in
+// vercel.json. A bare parameter matches one path segment, as Vercel does.
+const toPattern = (source) => new RegExp(`^${source
+  .replace(/:(\w+)\(([^)]+)\)/g, "(?<$1>$2)")
+  .replace(/:(\w+)/g, "(?<$1>[^/]+)")}$`);
 
 async function readBody(req) {
   const chunks = [];
@@ -105,7 +108,8 @@ export async function serve({ handler = menu, label = "Chichkhan" } = {}) {
 
   server.listen(Number(process.env.PORT || 4173), "127.0.0.1", () => {
     const base = `http://localhost:${server.address().port}`;
-    console.log(`${label}: ${base}/restaurant and ${base}/cafe · admin at ${base}/admin`);
+    console.log(`${label}: ${base}/restaurant and ${base}/cafe`);
+  console.log(`Admin: open a private link with \`npm run admin:link -- ${base}\` (/admin is 404 without a session).`);
   });
   return server;
 }

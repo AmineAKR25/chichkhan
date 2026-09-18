@@ -16,8 +16,16 @@
       "destination": "/api/admin?page=dashboard"
     },
     {
-      "source": "/admin/:page(login|logout|cafe|restaurant)",
+      "source": "/admin/:page(logout|cafe|restaurant)",
       "destination": "/api/admin?page=:page"
+    },
+    {
+      "source": "/owner-access/password",
+      "destination": "/api/admin?page=access-password"
+    },
+    {
+      "source": "/owner-access/:token",
+      "destination": "/api/admin?page=access&token=:token"
     }
   ],
   "headers": [
@@ -32,6 +40,14 @@
     {
       "source": "/assets/admin/(.*)",
       "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow" }]
+    },
+    {
+      "source": "/owner-access(.*)",
+      "headers": [
+        { "key": "X-Robots-Tag", "value": "noindex, nofollow" },
+        { "key": "Referrer-Policy", "value": "no-referrer" },
+        { "key": "Cache-Control", "value": "no-store" }
+      ]
     }
   ],
   "redirects": [

@@ -16,7 +16,8 @@
     "local:stop": "node scripts/local.mjs stop",
     "local:reset": "node scripts/local.mjs reset",
     "local:status": "node scripts/local.mjs status",
-    "admin:password": "node scripts/admin-password.mjs"
+    "admin:password": "node scripts/admin-password.mjs",
+    "admin:link": "node --env-file-if-exists=.env.local scripts/admin-link.mjs"
   },
   "version": "1.0.0",
   "dependencies": {

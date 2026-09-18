@@ -7,7 +7,7 @@ Chichkhan is the main application in this repository. It serves two independent 
 
 There is no homepage and no chooser. Neither route links to, names or hints at the other. `/` redirects to `/restaurant`, and the previous `/menu-1` and `/menu-2` paths redirect permanently, so printed QR codes keep working.
 
-A private admin at `/admin` edits both menus (see [Admin](#admin)). The public pages never link to it.
+A private admin edits both menus (see [Admin](#admin)). It is reached only through the owner's private link; the public pages never link to it, and `/admin` answers 404 to everyone else.
 
 ## How a page is built
 
@@ -57,6 +57,8 @@ No ordering, payment or new venue claims were added. Existing menu contents, pri
 
 `/admin` is a private workspace for both menus. It is server-rendered by `api/admin.js` behind the rewrites in `vercel.json`, and every page and API call checks the session on the server.
 
+**There is no public sign-in page.** Without a valid session, `/admin`, `/admin/cafe`, `/admin/restaurant` and every `/api/admin` call answer an empty 404 — the same answer a path that was never routed would give — so guessing the address reveals nothing. The one unauthenticated way in is the owner link.
+
 - **Overview** (`/admin`): one card per venue (categories, visible and hidden products, "Manage menu"), a short "Needs attention" list (empty categories, hidden items, missing photos) and recent activity.
 - **Menu editors** (`/admin/cafe`, `/admin/restaurant`): a category sidebar (a picker on phones), search and filters (name, visibility, photo, category), the selected category with its products, and "Groups and order" for groups, the category order and the venue's hero photo and logo. Products and categories are edited in a side panel with a public-menu preview; nothing is saved until "Save changes". Every change says what happened in a notification, and deletions offer Undo.
 - **Ordering** uses "Move up" and "Move down" only (no drag and drop). It rewrites `position` as 1…n inside one transaction and changes nothing but the order of the public website. Categories move within their group; groups carry their categories with them; products move within their category, and a product moved to another category goes to its end.
@@ -65,8 +67,23 @@ No ordering, payment or new venue claims were added. Existing menu contents, pri
 
 **Venue separation.** Every admin query and change is filtered by the `venue` enum, and an id from the other venue is simply "not found". The composite foreign keys in `db/schema.sql` enforce the same rule in the database. Only one check crosses venues: before deleting a photo from storage, the admin makes sure no record in either venue (or a deletion that can still be undone) uses it.
 
+### The owner link
+
+Access starts with a link only the owner has:
+
+```
+npm run admin:link -- https://your-site.com          # no expiry
+npm run admin:link -- https://your-site.com 30       # valid 30 days
+```
+
+It prints one address, `https://your-site.com/owner-access/<token>`. The token is AES-GCM ciphertext under `ADMIN_LINK_SECRET`: nothing in it can be read (not even the expiry date), and no token can be produced without the secret. Every byte is authenticated, so an edited link is not a near miss — it is a 404.
+
+**The link is not a password, and it is not access on its own.** Opening it only unlocks the password screen: it sets a 10-minute cookie scoped to `/owner-access` and redirects to `/owner-access/password`, which asks for the username and password as before. Link **plus** password creates the session. Someone who steals the link still cannot get in; someone who knows the password but has no link has nowhere to type it.
+
+Treat the link as a key all the same: send it over a channel you trust, and keep it out of anything public. `Referrer-Policy: no-referrer` stops it leaking through the Referer header. To revoke every link ever issued, change `ADMIN_LINK_SECRET` and print a new one — that does not change the password. Signing out clears both cookies; coming back means reopening the link.
+
 **Security.**
-- Credentials come from the environment only: `ADMIN_USERNAME`, `ADMIN_PASSWORD_HASH` (scrypt, from `npm run admin:password`) and `ADMIN_SESSION_SECRET` (32+ characters). There is no default password. If any is missing, every admin route shows "Admin setup needed" and grants nothing.
+- Credentials come from the environment only: `ADMIN_USERNAME`, `ADMIN_PASSWORD_HASH` (scrypt, from `npm run admin:password`), `ADMIN_SESSION_SECRET` and `ADMIN_LINK_SECRET` (32+ characters each). There is no default password and no bypass. If any is missing, the console answers 404 everywhere on Vercel; locally it still shows what is left to set, so development is not a guessing game.
 - Sessions are HMAC-signed, `HttpOnly`, `SameSite=Strict`, `__Host-` and `Secure` on https, and expire after 12 hours. Changing the password hash or the secret signs everyone out.
 - Changes must be same-origin POSTs carrying a custom header. Repeated wrong passwords from one address are slowed down (best effort on serverless; the slow hash is the real defence).
 - Admin responses are `no-store`, `noindex, nofollow`, framed nowhere, and carry a strict Content-Security-Policy. Database, storage and session secrets never reach the browser: image URLs are built on the server.
@@ -175,6 +192,7 @@ lib/
   images.js     R2 object key → public URL, rejecting unsafe keys
   admin/
     handler.js  admin routes, session checks, same-origin checks, uploads
+    link.js     the encrypted owner link: the only unauthenticated way in
     auth.js     password hashing, signed session cookies, sign-in throttle
     store.js    every admin read and change: venue-scoped, transactional, audited, undoable
     storage.js  S3-compatible adapter (R2, MinIO, SeaweedFS), key generation, type sniffing
@@ -193,7 +211,8 @@ src/            static files published by npm run build
 scripts/
   serve.mjs     local stand-in for Vercel
   local.mjs     local Postgres and S3 service for development
-  admin-password.mjs  ADMIN_PASSWORD_HASH and ADMIN_SESSION_SECRET values
+  admin-password.mjs  ADMIN_PASSWORD_HASH, ADMIN_SESSION_SECRET and ADMIN_LINK_SECRET values
+  admin-link.mjs      prints a private owner link
 assets-source/  the supplied originals, never published
 tests/          node:test suite; helpers read db/seed.sql or load it into PGlite
 dist/           build output (git-ignored)
@@ -203,8 +222,8 @@ dist/           build output (git-ignored)
 
 `npm test` needs no database: it reads `db/seed.sql` back into the same shape `lib/db.js` returns. It covers the schema’s venue separation, catalogue totals, search, rendering of every item and price, compact lists, suggestions, safe embedding of database text, R2 URLs and placeholders, the venue allowlist, and the 503 page showing nothing from the menu when the database is missing or failing.
 
-The admin tests load `db/schema.sql` and `db/seed.sql` into PGlite (Postgres compiled to WebAssembly, a development dependency), so the real SQL runs without a server: ordering, venue isolation, transactions, deletion, Undo and history. They also cover sign-in and sessions, same-origin checks, the setup-needed state, upload validation against a recording storage stand-in, S3 request signing, and price and slug validation. No Neon, R2, MinIO or secrets are needed.
+The admin tests load `db/schema.sql` and `db/seed.sql` into PGlite (Postgres compiled to WebAssembly, a development dependency), so the real SQL runs without a server: ordering, venue isolation, transactions, deletion, Undo and history. They also cover the owner link and its forgery and expiry cases, the 404 given to everyone without a session, sign-in and sessions, same-origin checks, the setup-needed state, upload validation against a recording storage stand-in, S3 request signing, and price and slug validation. No Neon, R2, MinIO or secrets are needed.
 
 ## Deployment
 
-Vercel uses the repository root. `vercel.json` runs `npm run build`, publishes `dist`, rewrites `/restaurant` and `/cafe` to `api/menu.js` and `/admin…` to `api/admin.js`, pins the functions to `fra1`, and keeps the `/`, `/menu-1` and `/menu-2` redirects. Set `DATABASE_URL` and `R2_PUBLIC_BASE_URL` for Production and Preview, and for the admin `ADMIN_USERNAME`, `ADMIN_PASSWORD_HASH`, `ADMIN_SESSION_SECRET`, `ADMIN_DATABASE_URL` and the `S3_*` settings (see `.env.example`). The site remains `noindex`.
+Vercel uses the repository root. `vercel.json` runs `npm run build`, publishes `dist`, rewrites `/restaurant` and `/cafe` to `api/menu.js` and `/admin…` and `/owner-access/…` to `api/admin.js`, pins the functions to `fra1`, and keeps the `/`, `/menu-1` and `/menu-2` redirects. Set `DATABASE_URL` and `R2_PUBLIC_BASE_URL` for Production and Preview, and for the admin `ADMIN_USERNAME`, `ADMIN_PASSWORD_HASH`, `ADMIN_SESSION_SECRET`, `ADMIN_LINK_SECRET`, `ADMIN_DATABASE_URL` and the `S3_*` settings (see `.env.example`). Then print the owner link with `npm run admin:link -- https://your-site.com`. The site remains `noindex`.

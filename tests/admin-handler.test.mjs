@@ -3,6 +3,7 @@
 import test, { after } from "node:test";
 import assert from "node:assert/strict";
 import { LoginThrottle, hashPassword } from "../lib/admin/auth.js";
+import { createAccessLinkToken } from "../lib/admin/link.js";
 import { handleAdminRequest } from "../lib/admin/handler.js";
 import { renderMenuPage } from "../lib/render.js";
 import { catalogue } from "./helpers/catalogue.mjs";
@@ -16,6 +17,7 @@ const env = {
   ADMIN_USERNAME: "owner",
   ADMIN_PASSWORD_HASH: await hashPassword(password),
   ADMIN_SESSION_SECRET: "test-session-secret-".repeat(3),
+  ADMIN_LINK_SECRET: "test-link-secret-".repeat(3),
   DATABASE_URL: "postgres://user:db-password-never-shown@db.example/menu",
   R2_PUBLIC_BASE_URL: "https://images.example.com",
 };
@@ -48,9 +50,23 @@ async function setup({ withStorage = false, overrides = {} } = {}) {
 }
 
 const same = { origin, "sec-fetch-site": "same-origin", host: "localhost:4173" };
-async function signIn(call, { username = "owner", pass = password, next = "" } = {}) {
+
+// Opening the private link is the first half of signing in; it hands back the
+// short-lived cookie the password screen requires.
+const linkToken = (expiresAt) => createAccessLinkToken(env.ADMIN_LINK_SECRET, expiresAt);
+async function openLink(call, token) {
+  const response = await call(`/api/admin?page=access&token=${token ?? (await linkToken(null))}`);
+  const cookie = response.headers.get("set-cookie");
+  return { response, cookie: cookie ? cookie.split(";")[0] : "" };
+}
+async function signIn(call, { username = "owner", pass = password, next = "", link } = {}) {
   const body = new URLSearchParams({ username, password: pass, next });
-  return call("/api/admin?page=login", { method: "POST", headers: { ...same, "content-type": "application/x-www-form-urlencoded" }, body });
+  const cookie = link === undefined ? (await openLink(call)).cookie : link;
+  return call("/api/admin?page=access-password", {
+    method: "POST",
+    headers: { ...same, cookie, "content-type": "application/x-www-form-urlencoded" },
+    body,
+  });
 }
 async function session(call) {
   const response = await signIn(call);
@@ -69,10 +85,12 @@ function assertPrivate(response) {
   assert.match(response.headers.get("content-security-policy"), /script-src 'self'; .*frame-ancestors 'none'/);
 }
 
-test("without admin settings every route shows setup-needed and grants nothing", async () => {
-  const { call, opened, close } = await setup({ overrides: { ADMIN_USERNAME: "", ADMIN_PASSWORD_HASH: "", ADMIN_SESSION_SECRET: "" } });
+const unset = { ADMIN_USERNAME: "", ADMIN_PASSWORD_HASH: "", ADMIN_SESSION_SECRET: "", ADMIN_LINK_SECRET: "" };
+
+test("without admin settings, local development still explains what is missing", async () => {
+  const { call, opened, close } = await setup({ overrides: unset });
   try {
-    for (const page of ["dashboard", "cafe", "restaurant", "login"]) {
+    for (const page of ["dashboard", "cafe", "restaurant", "access-password"]) {
       const response = await call(`/api/admin?page=${page}`);
       assert.equal(response.status, 503);
       assertPrivate(response);
@@ -84,31 +102,83 @@ test("without admin settings every route shows setup-needed and grants nothing",
     const api = await call("/api/admin?op=state&venue=cafe");
     assert.equal(api.status, 503);
     assert.equal((await api.json()).error.code, "setup-needed");
-    const login = await signIn(call);
-    assert.equal(login.status, 503);
     assert.equal(opened.length, 0, "the database is never touched");
   } finally {
     await close();
   }
 });
 
-test("pages redirect to sign-in and every API action refuses without a session", async () => {
+test("half-configured on Vercel behaves as though the console did not exist", async () => {
+  const { call, opened, close } = await setup({ overrides: { ...unset, VERCEL: "1" } });
+  try {
+    for (const page of ["dashboard", "cafe", "restaurant", "access-password", "access"]) {
+      const response = await call(`/api/admin?page=${page}`);
+      assert.equal(response.status, 404, page);
+      const html = await response.text();
+      assert.equal(html, "", "a 404 body says nothing at all");
+    }
+    const api = await call("/api/admin?op=state&venue=cafe");
+    assert.equal(api.status, 404);
+    assert.equal(opened.length, 0, "the database is never touched");
+  } finally {
+    await close();
+  }
+});
+
+test("without a session every admin page and API action answers a bare 404", async () => {
   const { call, opened, close } = await setup();
   try {
-    const dashboard = await call("/api/admin?page=dashboard");
-    assert.equal(dashboard.status, 303);
-    assert.equal(dashboard.headers.get("location"), "/admin/login");
-    const editor = await call("/api/admin?page=cafe&category=4");
-    assert.equal(editor.headers.get("location"), `/admin/login?next=${encodeURIComponent("/admin/cafe?category=4")}`);
-    for (const op of ["state", "audit", "overview"]) assert.equal((await call(`/api/admin?op=${op}&venue=cafe`)).status, 401);
+    for (const page of ["dashboard", "cafe", "restaurant"]) {
+      const response = await call(`/api/admin?page=${page}&category=4`);
+      assert.equal(response.status, 404, page);
+      assert.equal(await response.text(), "", "nothing hints that a console is here");
+      assert.equal(response.headers.get("location"), null, "and nothing points at a sign-in page");
+    }
+    for (const op of ["state", "audit", "overview"]) assert.equal((await call(`/api/admin?op=${op}&venue=cafe`)).status, 404);
     for (const op of ["product.update", "product.delete", "category.move", "group.delete", "undo", "image.remove", "image.upload"]) {
       const response = await post(call, "", op, { venue: "cafe", id: 1 });
-      assert.equal(response.status, 401, op);
+      assert.equal(response.status, 404, op);
+      // The status hides the console; the body still lets the open editor explain.
       assert.equal((await response.json()).error.code, "signed-out");
     }
     const forged = await post(call, "chichkhan_admin=eyJ1Ijoib3duZXIifQ.AAAA", "product.delete", { venue: "cafe", id: 1 });
-    assert.equal(forged.status, 401);
+    assert.equal(forged.status, 404);
     assert.equal(opened.length, 0);
+  } finally {
+    await close();
+  }
+});
+
+test("the owner link is the only door, and it opens the password screen only", async () => {
+  const { call, close } = await setup();
+  try {
+    // A good link hands over a short-lived, path-scoped cookie.
+    const { response, cookie } = await openLink(call);
+    assert.equal(response.status, 303);
+    assert.equal(response.headers.get("location"), "/owner-access/password");
+    assert.equal(response.headers.get("referrer-policy"), "no-referrer");
+    assert.match(response.headers.get("set-cookie"), /^chichkhan_owner_link=[\w-]+; Path=\/owner-access; HttpOnly; SameSite=Lax; Max-Age=600$/);
+
+    // Holding the link is not holding a session.
+    assert.equal((await call("/api/admin?page=dashboard", { headers: { cookie } })).status, 404);
+
+    // The password screen appears for a live link, and for nobody else.
+    const screen = await call("/api/admin?page=access-password", { headers: { cookie } });
+    assert.equal(screen.status, 200);
+    assert.match(await screen.text(), /Administration des menus/);
+    assert.equal((await call("/api/admin?page=access-password")).status, 404, "no link, no screen");
+
+    // A tampered, foreign, expired or absent token is simply not a page.
+    const good = await linkToken(null);
+    for (const token of ["", "not-a-token", good.slice(0, -2) + "aa", await createAccessLinkToken("a different secret entirely", null), await linkToken(Date.now() - 1000)]) {
+      const bad = await call(`/api/admin?page=access&token=${encodeURIComponent(token)}`);
+      assert.equal(bad.status, 404, token.slice(0, 12));
+      assert.equal(bad.headers.get("set-cookie"), null);
+    }
+    // And the password alone, without a link, gets nowhere.
+    const noLink = await signIn(call, { link: "" });
+    assert.equal(noLink.status, 404);
+    assert.equal(noLink.headers.get("set-cookie"), null);
   } finally {
     await close();
   }
@@ -126,20 +196,22 @@ test("sign-in checks the password, sets a signed cookie and only returns to admi
     const ok = await signIn(call, { next: "/admin/cafe?category=3" });
     assert.equal(ok.status, 303);
     assert.equal(ok.headers.get("location"), "/admin/cafe?category=3");
-    assert.match(ok.headers.get("set-cookie"), /^chichkhan_admin=[\w-]+\.[\w-]+; Path=\/; HttpOnly; SameSite=Strict; Max-Age=43200$/);
+    assert.match(ok.headers.getSetCookie()[0], /^chichkhan_admin=[\w-]+\.[\w-]+; Path=\/; HttpOnly; SameSite=Strict; Max-Age=43200$/);
+    assert.match(ok.headers.getSetCookie()[1], /^chichkhan_owner_link=; .*Max-Age=0/, "the link cookie is spent once a session exists");
     for (const next of ["//evil.example", "https://evil.example/admin", "/admin/../cafe", "/admin/bar", "/cafe"]) {
       assert.equal((await signIn(call, { next })).headers.get("location"), "/admin", next);
     }
-    const crossSite = await call("/api/admin?page=login", { method: "POST", headers: { origin: "https://evil.example", host: "localhost:4173", "content-type": "application/x-www-form-urlencoded" }, body: `username=owner&password=${encodeURIComponent(password)}` });
+    const link = (await openLink(call)).cookie;
+    const crossSite = await call("/api/admin?page=access-password", { method: "POST", headers: { origin: "https://evil.example", host: "localhost:4173", cookie: link, "content-type": "application/x-www-form-urlencoded" }, body: `username=owner&password=${encodeURIComponent(password)}` });
     assert.equal(crossSite.status, 403);
     assert.equal(crossSite.headers.get("set-cookie"), null);
 
-    const cookie = ok.headers.get("set-cookie").split(";")[0];
+    const cookie = ok.headers.getSetCookie()[0].split(";")[0];
     const logout = await call("/api/admin?page=logout", { method: "POST", headers: { ...same, cookie } });
-    assert.equal(logout.status, 303);
-    assert.equal(logout.headers.get("location"), "/admin/login?signedout=1");
-    assert.match(logout.headers.get("set-cookie"), /chichkhan_admin=; .*Max-Age=0/);
-    assert.equal((await call("/api/admin?page=logout", { headers: { cookie } })).status, 303, "GET never signs out");
+    assert.equal(logout.status, 200);
+    assert.match(await logout.text(), /Vous êtes déconnecté·e/);
+    assert.match(String(logout.headers.getSetCookie()), /chichkhan_admin=; .*Max-Age=0/);
+    assert.equal((await call("/api/admin?page=logout", { headers: { cookie } })).status, 404, "GET never signs out");
   } finally {
     await close();
   }

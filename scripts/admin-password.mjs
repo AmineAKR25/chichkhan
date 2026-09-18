@@ -1,5 +1,6 @@
 // Prints the values the admin needs: ADMIN_PASSWORD_HASH for a password you
-// type (never echoed or stored), and a fresh ADMIN_SESSION_SECRET.
+// type (never echoed or stored), plus fresh ADMIN_SESSION_SECRET and
+// ADMIN_LINK_SECRET values.
 //   npm run admin:password             asks for the password twice
 //   npm run admin:password -- --generate   creates a strong random password
 import { randomBytes } from "node:crypto";
@@ -61,7 +62,10 @@ try {
   console.log("Set these in Vercel (Project → Settings → Environment Variables) or .env.local:\n");
   console.log(`ADMIN_PASSWORD_HASH=${hash}`);
   console.log(`ADMIN_SESSION_SECRET=${randomBytes(32).toString("base64url")}`);
-  console.log("\nAlso set ADMIN_USERNAME. Changing the hash or the secret signs everyone out.");
+  console.log(`ADMIN_LINK_SECRET=${randomBytes(32).toString("base64url")}`);
+  console.log("\nAlso set ADMIN_USERNAME. Changing the hash or the session secret signs everyone out;");
+  console.log("changing the link secret invalidates every owner link ever issued.");
+  console.log("\nThen print an owner link with:\n\n  npm run admin:link -- https://your-site.com\n");
 } catch (error) {
   console.error(error.message);
   process.exit(1);

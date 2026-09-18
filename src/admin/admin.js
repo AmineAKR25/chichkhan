@@ -189,9 +189,8 @@ const apiPost = (op, body) => request(`/api/admin?${new URLSearchParams({ op })}
 
 function reportError(error, { prefix = '' } = {}) {
   if (error.status === 401 || error.code === 'signed-out') {
-    toast('Votre session a expiré. Connectez-vous de nouveau dans un nouvel onglet, puis recommencez la dernière étape.', {
+    toast('Votre session a expiré. Rouvrez votre lien privé dans un nouvel onglet pour vous reconnecter, puis recommencez la dernière étape.', {
       type: 'error',
-      action: { label: 'Se connecter (nouvel onglet)', href: `/admin/login?next=${encodeURIComponent(location.pathname)}`, newTab: true },
       duration: 60000,
     });
     return;

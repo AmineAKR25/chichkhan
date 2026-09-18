@@ -9,7 +9,7 @@ import {
 
 const password = "correct horse battery staple";
 const hash = await hashPassword(password);
-const config = adminConfig({ ADMIN_USERNAME: "owner", ADMIN_PASSWORD_HASH: hash, ADMIN_SESSION_SECRET: "s".repeat(40) });
+const config = adminConfig({ ADMIN_USERNAME: "owner", ADMIN_PASSWORD_HASH: hash, ADMIN_SESSION_SECRET: "s".repeat(40), ADMIN_LINK_SECRET: "l".repeat(40) });
 
 test("passwords are stored as salted scrypt hashes and verified in constant time", async () => {
   assert.match(hash, /^scrypt:32768:8:1:[A-Za-z0-9_-]{22}:[A-Za-z0-9_-]{43}$/);
@@ -26,10 +26,12 @@ test("the admin is locked until every setting is present and valid", () => {
   assert.equal(config.ready, true);
   const empty = adminConfig({});
   assert.equal(empty.ready, false);
-  assert.deepEqual(empty.missing, ["ADMIN_USERNAME", "ADMIN_PASSWORD_HASH", "ADMIN_SESSION_SECRET"]);
-  const weak = adminConfig({ ADMIN_USERNAME: "owner", ADMIN_PASSWORD_HASH: "hunter2", ADMIN_SESSION_SECRET: "short" });
+  assert.deepEqual(empty.missing, ["ADMIN_USERNAME", "ADMIN_PASSWORD_HASH", "ADMIN_SESSION_SECRET", "ADMIN_LINK_SECRET"]);
+  const weak = adminConfig({ ADMIN_USERNAME: "owner", ADMIN_PASSWORD_HASH: "hunter2", ADMIN_SESSION_SECRET: "short", ADMIN_LINK_SECRET: "short" });
   assert.equal(weak.ready, false);
-  assert.equal(weak.problems.length, 2);
+  assert.equal(weak.problems.length, 3);
+  // A link secret on its own is not enough to open anything.
+  assert.equal(adminConfig({ ADMIN_LINK_SECRET: "l".repeat(40) }).ready, false);
 });
 
 test("session tokens are signed, expire, and die when the password or secret changes", async () => {

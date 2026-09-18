@@ -20,6 +20,7 @@ import { delimiter, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
 import { hashPassword } from "../lib/admin/auth.js";
+import { createAccessLinkToken } from "../lib/admin/link.js";
 import { createStorage, storageConfig } from "../lib/admin/storage.js";
 
 const repo = fileURLToPath(new URL("../", import.meta.url));
@@ -107,6 +108,7 @@ function secrets() {
     adminPassword: saved.adminPassword ?? randomBytes(12).toString("base64url"),
     adminPasswordHash: saved.adminPasswordHash ?? null,
     sessionSecret: saved.sessionSecret ?? randomBytes(32).toString("base64url"),
+    linkSecret: saved.linkSecret ?? randomBytes(32).toString("base64url"),
     s3AccessKey: saved.s3AccessKey ?? `local${randomBytes(6).toString("hex")}`,
     s3SecretKey: saved.s3SecretKey ?? randomBytes(24).toString("base64url"),
   };
@@ -306,6 +308,7 @@ async function setup({ force = false } = {}) {
     ADMIN_USERNAME: s.adminUsername,
     ADMIN_PASSWORD_HASH: s.adminPasswordHash,
     ADMIN_SESSION_SECRET: s.sessionSecret,
+    ADMIN_LINK_SECRET: s.linkSecret,
   };
   if (server) {
     say(`Storage: ${server.kind} (${server.path})`);
@@ -321,12 +324,17 @@ async function setup({ force = false } = {}) {
   if (started) stopPostgres(bin);
   writeEnv(values, { force });
   say("\nWrote the local settings to .env.local (git-ignored).");
-  printSignIn(s);
+  await printSignIn(s);
   say("Next: npm run local:start");
 }
 
-function printSignIn(s) {
-  say(`\nLocal admin sign-in (this machine only):\n  http://localhost:${process.env.PORT || 4173}/admin\n  username: ${s.adminUsername}\n  password: ${s.adminPassword}\n`);
+// The console has no public address, so development needs a real owner link
+// too. This one never expires and only works against this local machine.
+async function printSignIn(s) {
+  const port = process.env.PORT || 4173;
+  const link = `http://localhost:${port}/owner-access/${await createAccessLinkToken(s.linkSecret, null)}`;
+  say(`\nLocal admin sign-in (this machine only):\n  ${link}\n  username: ${s.adminUsername}\n  password: ${s.adminPassword}\n`);
+  say("  http://localhost:" + port + "/admin answers 404 until you open that link and sign in.\n");
 }
 
 async function start() {
@@ -340,7 +348,7 @@ async function start() {
   let startedStorage = false;
   if (server && env.includes(`S3_ENDPOINT=http://127.0.0.1:${S3_PORT}`)) startedStorage = await startStorage(server, s);
   say(`Postgres on 127.0.0.1:${PG_PORT}${server && startedStorage ? `, ${server.kind} on 127.0.0.1:${S3_PORT}` : ""}.`);
-  printSignIn(s);
+  await printSignIn(s);
 
   const build = spawnSync(process.execPath, [join(repo, "build.mjs")], { stdio: "inherit" });
   if (build.status !== 0) process.exit(build.status ?? 1);
@@ -377,13 +385,13 @@ async function reset() {
   say("Recreated the local database from db/schema.sql and db/seed.sql. Local edits and history are gone.");
 }
 
-function status() {
+async function status() {
   const bin = findPostgres();
   const s = readJson(secretsFile, null);
   say(`Postgres: ${!bin ? "not installed" : !existsSync(pgData) ? "not set up (npm run local:setup)" : postgresRunning(bin) ? `running on 127.0.0.1:${PG_PORT}` : "stopped"}`);
   const server = findStorageServer();
   say(`Storage:  ${!server ? "no MinIO or SeaweedFS found (uploads off)" : storagePid() ? `${server.kind} running on 127.0.0.1:${S3_PORT}` : `${server.kind} stopped`}`);
-  if (s) printSignIn(s);
+  if (s) await printSignIn(s);
 }
 
 const [command = "status", ...flags] = process.argv.slice(2);
