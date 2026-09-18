@@ -11,3 +11,6 @@ node_modules/
 npm-debug.log*
 .design/**/screenshots/
 .local/
+
+# Reference photos dropped in while working
+*.JPG
