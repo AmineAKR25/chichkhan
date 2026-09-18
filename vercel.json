@@ -10,6 +10,28 @@
     {
       "source": "/:venue(restaurant|cafe)",
       "destination": "/api/menu?venue=:venue"
+    },
+    {
+      "source": "/admin",
+      "destination": "/api/admin?page=dashboard"
+    },
+    {
+      "source": "/admin/:page(login|logout|cafe|restaurant)",
+      "destination": "/api/admin?page=:page"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/admin(.*)",
+      "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow" }]
+    },
+    {
+      "source": "/api/admin(.*)",
+      "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow" }]
+    },
+    {
+      "source": "/assets/admin/(.*)",
+      "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow" }]
     }
   ],
   "redirects": [

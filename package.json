@@ -9,13 +9,25 @@
     "assets": "bash scripts/build-assets.sh",
     "dev": "node build.mjs && node --env-file-if-exists=.env.local scripts/serve.mjs",
     "preview": "node --env-file-if-exists=.env.local scripts/serve.mjs",
-    "start": "node --env-file-if-exists=.env.local scripts/serve.mjs"
+    "preview:seed": "node build.mjs && node --env-file-if-exists=.env.local scripts/preview-seed.mjs",
+    "start": "node --env-file-if-exists=.env.local scripts/serve.mjs",
+    "local:setup": "node scripts/local.mjs setup",
+    "local:start": "node scripts/local.mjs start",
+    "local:stop": "node scripts/local.mjs stop",
+    "local:reset": "node scripts/local.mjs reset",
+    "local:status": "node scripts/local.mjs status",
+    "admin:password": "node scripts/admin-password.mjs"
   },
   "version": "1.0.0",
   "dependencies": {
-    "@neondatabase/serverless": "1.1.0"
+    "@neondatabase/serverless": "1.1.0",
+    "aws4fetch": "1.0.20",
+    "pg": "8.23.0"
   },
   "engines": {
     "node": ">=22.9"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "0.5.8"
   }
 }

@@ -7,11 +7,13 @@ Chichkhan is the main application in this repository. It serves two independent 
 
 There is no homepage and no chooser. Neither route links to, names or hints at the other. `/` redirects to `/restaurant`, and the previous `/menu-1` and `/menu-2` paths redirect permanently, so printed QR codes keep working.
 
+A private admin at `/admin` edits both menus (see [Admin](#admin)). The public pages never link to it.
+
 ## How a page is built
 
 1. A guest opens `/cafe`. Vercel rewrites it to `api/menu.js?venue=cafe`.
 2. `lib/handler.js` accepts only `restaurant` or `cafe`. Anything else is a 404 and never reaches the database.
-3. `lib/db.js` sends four read-only queries to Neon in one HTTP transaction (venue, groups, categories, items), each filtered by that venue.
+3. `lib/db.js` sends four read-only queries to Neon in one HTTP transaction (venue, groups, categories, items), each filtered by that venue. Any other Postgres (the local development database) is read over the standard protocol with the same queries.
 4. `lib/render.js` renders the full HTML page, and embeds the names and prices the browser needs for search and Ma sélection.
 5. The response is cached at Vercel's edge for 60 seconds and refreshed in the background, so edits in Neon appear within about a minute.
 
@@ -51,6 +53,30 @@ The site follows the device's dark mode: a deep green (café) or navy (SO) groun
 
 No ordering, payment or new venue claims were added. Existing menu contents, prices, notes and source provenance are preserved.
 
+## Admin
+
+`/admin` is a private workspace for both menus. It is server-rendered by `api/admin.js` behind the rewrites in `vercel.json`, and every page and API call checks the session on the server.
+
+- **Overview** (`/admin`): one card per venue (categories, visible and hidden products, "Manage menu"), a short "Needs attention" list (empty categories, hidden items, missing photos) and recent activity.
+- **Menu editors** (`/admin/cafe`, `/admin/restaurant`): a category sidebar (a picker on phones), search and filters (name, visibility, photo, category), the selected category with its products, and "Groups and order" for groups, the category order and the venue's hero photo and logo. Products and categories are edited in a side panel with a public-menu preview; nothing is saved until "Save changes". Every change says what happened in a notification, and deletions offer Undo.
+- **Ordering** uses "Move up" and "Move down" only (no drag and drop). It rewrites `position` as 1…n inside one transaction and changes nothing but the order of the public website. Categories move within their group; groups carry their categories with them; products move within their category, and a product moved to another category goes to its end.
+- **Deleting** always asks first. A group can only be deleted once empty (its categories can be moved to "No group" first, never deleted with it). A category with products is either emptied into another category or, after a second confirmation, deleted with its products. Deleted records can be restored with Undo for 15 minutes (`admin_deletions`); after that they are gone.
+- **History**: every change is written to `admin_audit` with time, action, venue, record and the administrator's name. Customer selections ("Ma sélection") stay in the guest's browser and never reach the database; there is no ordering and no POS link.
+
+**Venue separation.** Every admin query and change is filtered by the `venue` enum, and an id from the other venue is simply "not found". The composite foreign keys in `db/schema.sql` enforce the same rule in the database. Only one check crosses venues: before deleting a photo from storage, the admin makes sure no record in either venue (or a deletion that can still be undone) uses it.
+
+**Security.**
+- Credentials come from the environment only: `ADMIN_USERNAME`, `ADMIN_PASSWORD_HASH` (scrypt, from `npm run admin:password`) and `ADMIN_SESSION_SECRET` (32+ characters). There is no default password. If any is missing, every admin route shows "Admin setup needed" and grants nothing.
+- Sessions are HMAC-signed, `HttpOnly`, `SameSite=Strict`, `__Host-` and `Secure` on https, and expire after 12 hours. Changing the password hash or the secret signs everyone out.
+- Changes must be same-origin POSTs carrying a custom header. Repeated wrong passwords from one address are slowed down (best effort on serverless; the slow hash is the real defence).
+- Admin responses are `no-store`, `noindex, nofollow`, framed nowhere, and carry a strict Content-Security-Policy. Database, storage and session secrets never reach the browser: image URLs are built on the server.
+
+### Photos
+
+Uploads go through the admin API to the bucket with the S3 API (`lib/admin/storage.js`): Cloudflare R2 in production, MinIO or SeaweedFS locally. The browser resizes large photos (longest side 1600px, WebP) and the server accepts JPEG, PNG or WebP up to 4 MB, identified by their bytes. Keys are generated on the server (`products/cafe/12-3fa9c1d2e4.webp`) and only the key is stored in Postgres; public URLs still come from `R2_PUBLIC_BASE_URL`. A replaced or removed photo is deleted from the bucket only when no venue, category or product still uses it. Product photos appear on the public menu as a small arch beside the dish; every photo keeps its coloured placeholder behind it.
+
+Without storage settings, everything else works and the admin says "Image uploads are not configured." ("… configured locally." in development).
+
 ## Set up Neon (database)
 
 1. Create a Neon project, preferably in **AWS Europe Central 1 (Frankfurt)**, the region closest to Djerba and the one `vercel.json` pins the function to (`fra1`).
@@ -62,6 +88,15 @@ No ordering, payment or new venue claims were added. Existing menu contents, pri
    grant select on venues, category_groups, categories, menu_items to menu_site;
    ```
 4. Copy the **pooled** connection string for that role into `DATABASE_URL`: in Vercel (Project → Settings → Environment Variables) and in `.env.local` for local development.
+5. For the admin, a database created before the admin existed needs `db/migrations/001-admin.sql` (safe to run twice; `db/schema.sql` already includes it). Then create a role that may write the menu, but not change the schema, and put its pooled connection string in `ADMIN_DATABASE_URL`:
+   ```sql
+   create role menu_admin with login password 'REPLACE_WITH_ANOTHER_LONG_RANDOM_PASSWORD';
+   grant usage on schema public to menu_admin;
+   grant select, update on venues to menu_admin;
+   grant select, insert, update, delete on category_groups, categories, menu_items, admin_deletions to menu_admin;
+   grant select, insert on admin_audit to menu_admin;
+   ```
+   Without `ADMIN_DATABASE_URL` the admin uses `DATABASE_URL`, which then must not be the read-only role.
 
 Schema overview (`db/schema.sql`):
 
@@ -70,7 +105,9 @@ Schema overview (`db/schema.sql`):
 | `venues` | name, title, subtitle, eyebrow, description, hero/logo image keys, hero alt, hero crop | Primary key `slug` of enum type `venue` (`restaurant`, `cafe`) |
 | `category_groups` | Sidebar headings (“À boire”…) | Per venue, ordered by `position` |
 | `categories` | slug (URL fragment), name, note, image key, source provenance | `unique (venue, slug)`; `is_visible` hides without deleting |
-| `menu_items` | name, description, `price_millimes`, `is_house` | Composite FK `(venue, category_id)`: an item cannot land in the other venue’s category |
+| `menu_items` | name, description, `price_millimes`, `is_house`, optional photo key | Composite FK `(venue, category_id)`: an item cannot land in the other venue’s category |
+| `admin_audit` | admin history: time, administrator, action, venue, record | Written by `/admin` only; the public site never reads it |
+| `admin_deletions` | snapshots of deleted records for Undo | Kept for 15 minutes |
 
 Prices are integer millimes: `15500` is 15,500 DT. Every table has `updated_at` maintained by a trigger. Everyday edits:
 
@@ -97,6 +134,7 @@ select 'cafe', id, 'Thé glacé', 'Menthe, citron.', 9500, 9 from categories whe
    update venues set hero_image_key = 'venues/' || slug || '/hero.webp', logo_image_key = 'venues/' || slug || '/logo.webp';
    update categories set image_key = 'categories/' || venue || '/' || slug || '.webp' where venue = 'cafe' and slug = 'glaces';
    ```
+6. For uploads from `/admin`: R2 → **Manage R2 API Tokens** → create a token with **Object Read & Write** on this bucket only. Set `S3_ENDPOINT` (`https://<account-id>.r2.cloudflarestorage.com`), `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY` and `S3_REGION=auto` in Vercel. Photos uploaded through the admin need no SQL.
 
 ## Build and preview
 
@@ -107,28 +145,57 @@ cp .env.example .env.local   # then fill in DATABASE_URL and R2_PUBLIC_BASE_URL
 npm run dev
 ```
 
-Open http://localhost:4173/restaurant or http://localhost:4173/cafe. `npm run dev` copies the static files into `dist/` and starts a local server that applies the same redirects and rewrites as Vercel, calling the same `api/menu.js`. Without `DATABASE_URL` both routes show the unavailable page. Set `PORT` to use another port. Use Node.js 22.9 or later.
+Open http://localhost:4173/restaurant or http://localhost:4173/cafe. `npm run dev` copies the static files into `dist/` and starts a local server that applies the same redirects, rewrites and headers as Vercel, calling the same `api/menu.js` and `api/admin.js`. Without `DATABASE_URL` both routes show the unavailable page. Set `PORT` to use another port. Use Node.js 22.9 or later.
+
+## Local development without Neon or R2
+
+Everything can be reviewed on one machine with a throwaway database and no production secrets. You need PostgreSQL 15+ installed (the server program; it does not need to be running). For photo uploads, also install an S3-compatible service: [SeaweedFS](https://github.com/seaweedfs/seaweedfs/releases) (`weed`) or MinIO (`minio`), on the PATH, in `.local/bin/`, or named by `WEED_BIN` / `MINIO_BIN`.
+
+```sh
+npm run local:setup    # once: local Postgres from db/schema.sql + db/seed.sql, admin sign-in, bucket
+npm run local:start    # starts them and the site on :4173; Ctrl+C stops everything
+```
+
+- `local:setup` creates a separate Postgres cluster in `.local/postgres` on port 54329 (`LOCAL_PG_PORT`), so it never touches another Postgres on the machine, loads the schema and seed, generates a local admin password and session secret, and writes them into a marked block of `.env.local`. It prints the sign-in; `npm run local:status` shows it again. It refuses to overwrite settings you already have in `.env.local` (such as a Neon `DATABASE_URL`) unless you add `-- --force`.
+- With SeaweedFS or MinIO it starts a local S3 service on port 8333 (`LOCAL_S3_PORT`) with a public-read bucket, so uploads take the same path as in production: file → S3 API → key in Postgres → preview → public menu. Without one, uploads say "Image uploads are not configured locally." and everything else works.
+- `npm run local:reset` recreates the database from schema and seed; `npm run local:stop` stops the services if they were left running.
+
+`.local/` and `.env.local` are git-ignored. None of this is used in production, which reads Neon and R2 only.
 
 ## Layout
 
 ```
 api/menu.js     Vercel function behind /restaurant and /cafe
+api/admin.js    Vercel function behind /admin and the /api/admin JSON API
 lib/
   handler.js    venue allowlist, status codes, cache headers, asset version
-  db.js         Neon queries and row shaping (no fallback data)
+  db.js         public menu queries and row shaping (no fallback data)
+  database.js   Neon HTTP for public reads on Neon, node-postgres otherwise and for admin transactions
   render.js     server-rendered page, unavailable and not-found pages, search suggestions
   images.js     R2 object key → public URL, rejecting unsafe keys
+  admin/
+    handler.js  admin routes, session checks, same-origin checks, uploads
+    auth.js     password hashing, signed session cookies, sign-in throttle
+    store.js    every admin read and change: venue-scoped, transactional, audited, undoable
+    storage.js  S3-compatible adapter (R2, MinIO, SeaweedFS), key generation, type sniffing
+    pages.js    sign-in, setup-needed, overview and editor shell
 db/
   schema.sql    tables, enum, constraints, triggers
   seed.sql      the initial 223-item catalogue with source provenance
+  migrations/   upgrades for databases created from an earlier schema
 src/            static files published by npm run build
   style.css     shared visual system, dark mode, responsive layouts
   menu.js       scroll-spy rail, search, suggestions, history and dialogs
   selection.js  Ma sélection
   search.js     accent-insensitive matching, shared with the server
+  admin/        admin styles and scripts (published to /assets/admin/); shared.js validates prices, slugs and names on both sides
   assets/       fonts and favicon (published); entrance/logo derivatives for R2
+scripts/
+  serve.mjs     local stand-in for Vercel
+  local.mjs     local Postgres and S3 service for development
+  admin-password.mjs  ADMIN_PASSWORD_HASH and ADMIN_SESSION_SECRET values
 assets-source/  the supplied originals, never published
-tests/          node:test suite; tests/helpers/catalogue.mjs reads db/seed.sql
+tests/          node:test suite; helpers read db/seed.sql or load it into PGlite
 dist/           build output (git-ignored)
 ```
 
@@ -136,6 +203,8 @@ dist/           build output (git-ignored)
 
 `npm test` needs no database: it reads `db/seed.sql` back into the same shape `lib/db.js` returns. It covers the schema’s venue separation, catalogue totals, search, rendering of every item and price, compact lists, suggestions, safe embedding of database text, R2 URLs and placeholders, the venue allowlist, and the 503 page showing nothing from the menu when the database is missing or failing.
 
+The admin tests load `db/schema.sql` and `db/seed.sql` into PGlite (Postgres compiled to WebAssembly, a development dependency), so the real SQL runs without a server: ordering, venue isolation, transactions, deletion, Undo and history. They also cover sign-in and sessions, same-origin checks, the setup-needed state, upload validation against a recording storage stand-in, S3 request signing, and price and slug validation. No Neon, R2, MinIO or secrets are needed.
+
 ## Deployment
 
-Vercel uses the repository root. `vercel.json` runs `npm run build`, publishes `dist`, rewrites `/restaurant` and `/cafe` to `api/menu.js`, pins the function to `fra1`, and keeps the `/`, `/menu-1` and `/menu-2` redirects. Set `DATABASE_URL` and `R2_PUBLIC_BASE_URL` for Production and Preview. The site remains `noindex`.
+Vercel uses the repository root. `vercel.json` runs `npm run build`, publishes `dist`, rewrites `/restaurant` and `/cafe` to `api/menu.js` and `/admin…` to `api/admin.js`, pins the functions to `fra1`, and keeps the `/`, `/menu-1` and `/menu-2` redirects. Set `DATABASE_URL` and `R2_PUBLIC_BASE_URL` for Production and Preview, and for the admin `ADMIN_USERNAME`, `ADMIN_PASSWORD_HASH`, `ADMIN_SESSION_SECRET`, `ADMIN_DATABASE_URL` and the `S3_*` settings (see `.env.example`). The site remains `noindex`.

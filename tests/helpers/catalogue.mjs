@@ -7,8 +7,10 @@ const seed = readFileSync(new URL("../../db/seed.sql", import.meta.url), "utf8")
 
 function tuples(table) {
   const start = seed.indexOf(`insert into ${table} `);
-  const end = seed.indexOf(";\n", start);
-  const chunk = seed.slice(start, end);
+  // Find the statement terminator at an end of line, whichever line endings
+  // the checkout has: git core.autocrlf yields CRLF on Windows.
+  const offset = seed.slice(start).search(/;\r?\n/);
+  const chunk = seed.slice(start, offset === -1 ? undefined : start + offset);
   return [...chunk.matchAll(/^  \((.*)\),?$/gm)].map(([, row]) => {
     const values = [];
     const token = /'((?:[^']|'')*)'|(-?\d+)|(true|false)/g;

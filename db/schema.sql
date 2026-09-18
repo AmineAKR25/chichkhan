@@ -68,6 +68,8 @@ create table menu_items (
   is_house        boolean not null default false,
   position        integer not null default 0,
   is_visible      boolean not null default true,
+  -- Optional product photo, an R2 object key like the category image.
+  image_key       text,
   updated_at      timestamptz not null default now(),
   -- An item can only sit in a category of its own venue.
   foreign key (venue, category_id) references categories (venue, id) on delete cascade
@@ -75,6 +77,39 @@ create table menu_items (
 
 create index categories_venue_position_idx on categories (venue, position, id);
 create index menu_items_venue_position_idx on menu_items (venue, category_id, position, id);
+
+-- Admin history: who changed what, per venue. Written by the /admin API only;
+-- the public site never reads it.
+create table admin_audit (
+  id           bigint generated always as identity primary key,
+  created_at   timestamptz not null default now(),
+  actor        text not null default '',
+  venue        venue not null references venues (slug) on delete cascade,
+  action       text not null check (action in ('create', 'update', 'price', 'visibility', 'reorder', 'move', 'delete', 'restore', 'image')),
+  record_type  text not null check (record_type in ('venue', 'group', 'category', 'product')),
+  record_id    integer,
+  record_name  text not null default '',
+  summary      text not null,
+  details      jsonb not null default '{}'
+);
+create index admin_audit_venue_created_idx on admin_audit (venue, created_at desc, id desc);
+
+-- Deleted records, kept briefly so the administrator can undo a deletion.
+-- image_keys lists the photos the snapshot still refers to, so they are not
+-- removed from storage while an undo is possible.
+create table admin_deletions (
+  id           integer generated always as identity primary key,
+  created_at   timestamptz not null default now(),
+  actor        text not null default '',
+  venue        venue not null references venues (slug) on delete cascade,
+  record_type  text not null check (record_type in ('group', 'category', 'product')),
+  record_id    integer not null,
+  record_name  text not null,
+  snapshot     jsonb not null,
+  image_keys   text[] not null default '{}',
+  restored_at  timestamptz
+);
+create index admin_deletions_venue_created_idx on admin_deletions (venue, created_at);
 
 create trigger venues_updated_at before update on venues
   for each row execute function set_updated_at();

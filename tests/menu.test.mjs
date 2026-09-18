@@ -170,6 +170,36 @@ test("with R2 configured, images render and fall back to the placeholder on erro
   assert.ok(!renderMenuPage(cafe).includes("preconnect"), "no preconnect without images");
 });
 
+test("a product photo sits in a small arch over its placeholder, only when it has a key", () => {
+  const menu = catalogue("cafe");
+  const [first, second] = menu.categories[0].items;
+  first.imageKey = "products/cafe/1-0123456789.webp";
+  const html = renderMenuPage(menu, { imageBaseUrl: "https://images.example.com" });
+  const row = html.match(new RegExp(`<article class="dish has-photo" data-index="0" data-item-id="${first.id}">[\\s\\S]*?</article>`))[0];
+  assert.match(row, /<span class="dish-photo has-image" data-image style="--photo-color:#[0-9a-f]{6}" aria-hidden="true"><img src="https:\/\/images\.example\.com\/products\/cafe\/1-0123456789\.webp" alt="" loading="lazy" decoding="async" onerror=/);
+  assert.equal((html.match(/class="dish-photo/g) || []).length, 1);
+  assert.ok(html.includes(`<article class="dish" data-index="1" data-item-id="${second.id}">`));
+  // Without the R2 base URL there is no photo and no empty frame.
+  assert.ok(!renderMenuPage(menu).includes("dish-photo"));
+});
+
+test("categories follow their group's order, so the page matches its navigation", () => {
+  const menu = shapeMenu(
+    [{ slug: "cafe", name: "Café", title: "Café", hero_focus_y: 50 }],
+    [{ id: 2, name: "À boire" }, { id: 1, name: "Pour commencer" }],
+    [
+      { id: 10, group_id: 1, slug: "petit-dej", name: "Petit déjeuner", note: "", image_key: null },
+      { id: 11, group_id: null, slug: "divers", name: "Divers", note: "", image_key: null },
+      { id: 12, group_id: 2, slug: "jus", name: "Jus", note: "", image_key: null },
+    ],
+    [10, 11, 12].map((category, i) => ({ id: i + 1, category_id: category, name: `Item ${i}`, description: "", price_millimes: 1000, is_house: false })),
+  );
+  assert.deepEqual(menu.categories.map((c) => c.slug), ["jus", "petit-dej", "divers"]);
+  const html = renderMenuPage(menu);
+  const sectionOrder = [...html.matchAll(/class="menu-section" id="([^"]+)"/g)].map((m) => m[1]);
+  assert.deepEqual(sectionOrder, ["jus", "petit-dej", "divers"]);
+});
+
 // --- Request handling ---------------------------------------------------------------
 
 test("the venue comes from the URL and is the only venue queried", async () => {
