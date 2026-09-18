@@ -44,11 +44,14 @@ mark{background:var(--mark);color:inherit;border-radius:2px;padding:0 1px}
 /* One band: logo, venue name and the entrance arch. The photo stays on the right. */
 .hero{background:var(--hero);color:var(--on-hero)}
 .hero-inner{max-width:var(--content-width);margin:auto;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;align-items:center;padding:calc(12px + env(safe-area-inset-top,0px)) var(--gutter) 16px}
-.hero-copy{min-width:0}
-.hero-brand{display:flex;align-items:center;gap:11px;min-height:44px;font:600 11px/1.3 var(--sans);letter-spacing:.14em;text-transform:uppercase;color:#d9bd82cc}
+.hero-copy{min-width:0;display:flex;align-items:center;gap:14px}
+.hero-titles{min-width:0;display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 16px}
+.hero-meta{margin-left:auto;font:600 11px/1.4 var(--sans);letter-spacing:.14em;text-transform:uppercase;color:#d9bd82cc;white-space:nowrap}
 /* Logo and photographs come from R2; each frame is its own placeholder. */
-.hero-logo{display:block;flex-shrink:0;width:45px;height:45px;border-radius:50%;overflow:hidden;background:#060709;box-shadow:0 0 0 1px #d9bd8255}
-.hero-logo img{display:block;width:100%;height:100%;padding:4px;object-fit:contain}
+.hero-logo{display:block;flex-shrink:0;width:68px;height:92px}
+/* Nothing to show yet: a faint gold plate keeps the row from collapsing. */
+.hero-logo:not(.has-image){width:52px;height:70px;border-radius:999px 999px 6px 6px;background:#d9bd8214}
+.hero-logo img{display:block;width:100%;height:100%;object-fit:contain}
 .hero h1{font-size:clamp(32px,9.4vw,46px);letter-spacing:-.025em;line-height:.98;margin-top:2px;color:var(--gold)}
 .hero h1 span{display:block;color:var(--on-hero);font-size:.66em;font-style:italic;line-height:1.1;margin-top:4px;letter-spacing:0}
 .so .hero h1{font-size:clamp(40px,12vw,54px)}
@@ -228,6 +231,7 @@ body:has(dialog[open]){overflow:hidden}
   :root{--gutter:32px}
   .hero-inner{gap:32px;padding-block:calc(16px + env(safe-area-inset-top,0px)) 20px}
   .hero h1{font-size:54px}.so .hero h1{font-size:62px}.so .hero h1 span{font-size:24px}
+  .hero-logo{width:87px;height:118px}
   .hero-image-wrap{width:150px;padding:5px}.hero-figure{height:136px}
   .section-title h2{font-size:40px}
   .category-photo{width:200px}
@@ -242,9 +246,10 @@ body:has(dialog[open]){overflow:hidden}
   :root{--gutter:40px}
   html{scroll-padding-top:calc(var(--tools-offset,84px) + 16px)}
   .hero-inner{grid-template-columns:minmax(0,1fr) auto;gap:60px;padding-block:28px}
-  .hero-brand{font-size:12px}
+  .hero-meta{font-size:12px}
   .hero h1{font-size:76px;letter-spacing:-.035em;line-height:.95}
   .so .hero h1{font-size:96px}.so .hero h1 span{font-size:32px;margin-top:6px}
+  .hero-logo{width:108px;height:146px}
   .hero-image-wrap{width:300px;padding:8px}
   .hero-figure{height:190px}
   .menu-workspace{display:grid;grid-template-columns:224px minmax(0,1fr);gap:44px;padding-bottom:58px}
@@ -337,7 +342,7 @@ body:has(dialog[open]){overflow:hidden}
 @media print{
   *,*::before,*::after{animation:none!important;transition:none!important;transform:none!important}
   :root{--paper:#fff;--ink:#000;--muted:#333}
-  .hero-image-wrap,.hero-brand,.menu-sidebar,.menu-tools,footer,.skip,dialog,.search-status,.empty-state,.selection-bar,.add-item{display:none!important}
+  .hero-image-wrap,.hero-logo,.menu-sidebar,.menu-tools,footer,.skip,dialog,.search-status,.empty-state,.selection-bar,.add-item{display:none!important}
   .hero{background:white;color:black}.hero-inner{display:block;padding:0}.hero h1,.so .hero h1{font:500 32px/1.2 var(--serif);color:black}.hero h1 span{display:inline;font:inherit;color:black}
   .menu-workspace,.category-layout{display:block;padding:0}.menu-section[hidden],.dish[hidden]{display:block!important}.category-photo,.dish-photo{display:none}
   .dish.has-photo{display:block}.dish{break-inside:avoid}.section-title{break-after:avoid}body{background:white;color:black;padding:0}
