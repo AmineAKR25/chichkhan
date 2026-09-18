@@ -1,32 +1,26 @@
 @font-face{font-family:"Cormorant Garamond";font-style:normal;font-weight:400 600;font-display:swap;src:url('/assets/fonts/display.woff2') format('woff2')}
 @font-face{font-family:"Cormorant Garamond";font-style:italic;font-weight:400 500;font-display:swap;src:url('/assets/fonts/display-italic.woff2') format('woff2')}
 @font-face{font-family:"DM Sans";font-style:normal;font-weight:400 700;font-display:swap;src:url('/assets/fonts/body.woff2') format('woff2')}
+/* The printed cover: bottle green suede, gold foil. Both venues carry the
+   same colours, so the Café and the Restaurant read as one house, and the
+   page keeps them whatever the phone's light or dark setting says. */
 :root{
-  color-scheme:light dark;
-  --paper:#f7f8f5;--surface:#fff;--ink:#203b33;--brand:#16483c;--on-brand:#fffdf5;
-  --hero:#16483c;--on-hero:#fffdf5;--gold:#d9bd82;
-  --muted:#556660;--line:#dce2dc;--control-line:#9aa9a0;--soft:#e9eee7;--focus:#976622;
-  --house-bg:#f1e6cc;--house-ink:#6b4d14;--mark:#f0dfb4;--shadow:#142f2424;--arch-line:#b8914a80;
-  --sheet:#fff;--sheet-line:#e2e7e1;
+  color-scheme:dark;
+  --paper:#143a38;--surface:#18443f;--ink:#ecdfc0;--brand:#d9bd82;--on-brand:#12302c;
+  --hero:#10322f;--on-hero:#ecdfc0;--gold:#d9bd82;
+  --muted:#b6ac8e;--line:#2a4a45;--control-line:#55706a;--soft:#1b4842;--focus:#e0b867;
+  --house-bg:#3a3020;--house-ink:#ecd49c;--mark:#5c4a1f;--shadow:#00000066;--arch-line:#d9bd8266;
+  --sheet:#1d4a44;--sheet-line:#2f5b54;
   --serif:"Cormorant Garamond",Georgia,serif;--sans:"DM Sans","Avenir Next",sans-serif;
   --gutter:20px;--content-width:1280px;--motion:180ms;
+  /* Two stitched noise layers: the cover's cloudy mottling and its fibre. */
+  --grain:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='420' height='420'%3E%3Cfilter id='m' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.018' numOctaves='4' stitchTiles='stitch' seed='7'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Cfilter id='f' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch' seed='3'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='420' height='420' filter='url(%23m)' opacity='0.5'/%3E%3Crect width='420' height='420' filter='url(%23f)' opacity='0.22'/%3E%3C/svg%3E");
 }
-.so{--ink:#183d4c;--brand:#153c4b;--hero:#153c4b;--muted:#536772;--line:#d8e0e1;--control-line:#94a6ad;--soft:#e7edef}
-/* Carte de nuit: follows the phone's dark mode. Brass marks where you are. */
-@media (prefers-color-scheme:dark){
-  :root{
-    --paper:#0e1815;--surface:#15221e;--ink:#e9ece4;--brand:#d9bd82;--on-brand:#10201a;
-    --hero:#0b1612;--muted:#a3b3ab;--line:#26372f;--control-line:#4d6158;--soft:#1b2b25;--focus:#e0b867;
-    --house-bg:#3a3020;--house-ink:#ecd49c;--mark:#5c4a1f;--shadow:#00000066;--arch-line:#d9bd8266;
-    --sheet:#20322b;--sheet-line:#33473e;
-  }
-  .so{--ink:#e7ecee;--paper:#0d161b;--surface:#142129;--brand:#d9bd82;--hero:#0a141a;--muted:#a2b2b9;--line:#24343c;--control-line:#4a5d66;--soft:#192a32;--on-brand:#0d161b;--sheet:#1e313b;--sheet-line:#31454f}
-  .hero{border-bottom:1px solid var(--line)}
-  .category-photo,.dish-photo{background:color-mix(in oklab,var(--photo-color) 30%,var(--paper))!important}
-}
+.hero{border-bottom:1px solid var(--line)}
+.category-photo,.dish-photo{background:color-mix(in oklab,var(--photo-color) 30%,var(--paper))!important}
 *{box-sizing:border-box}
 html{scroll-behavior:smooth;scroll-padding-top:calc(var(--tools-offset,64px) + 12px)}
-body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.6 var(--sans);-webkit-font-smoothing:antialiased}
+body{margin:0;background:var(--paper) var(--grain) repeat;background-size:420px 420px;color:var(--ink);font:16px/1.6 var(--sans);-webkit-font-smoothing:antialiased}
 a{color:inherit;text-decoration:none}
 button,input{font:inherit;color:inherit}
 a,button,input{touch-action:manipulation}
@@ -48,17 +42,17 @@ mark{background:var(--mark);color:inherit;border-radius:2px;padding:0 1px}
 .hero{background:var(--hero);color:var(--on-hero)}
 .hero-inner{max-width:var(--content-width);margin:auto;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;align-items:center;padding:calc(12px + env(safe-area-inset-top,0px)) var(--gutter) 16px}
 .hero-copy{min-width:0}
-.hero-brand{display:flex;align-items:center;gap:11px;min-height:44px;font:600 11px/1.3 var(--sans);letter-spacing:.14em;text-transform:uppercase;color:#fffdf5d9}
+.hero-brand{display:flex;align-items:center;gap:11px;min-height:44px;font:600 11px/1.3 var(--sans);letter-spacing:.14em;text-transform:uppercase;color:#d9bd82cc}
 /* Logo and photographs come from R2; each frame is its own placeholder. */
 .hero-logo{display:block;flex-shrink:0;width:45px;height:45px;border-radius:50%;overflow:hidden;background:#060709;box-shadow:0 0 0 1px #d9bd8255}
 .hero-logo img{display:block;width:100%;height:100%;padding:4px;object-fit:contain}
-.hero h1{font-size:clamp(32px,9.4vw,46px);letter-spacing:-.025em;line-height:.98;margin-top:2px}
-.hero h1 span{display:block;color:var(--gold);font-size:.66em;font-style:italic;line-height:1.1;margin-top:4px;letter-spacing:0}
+.hero h1{font-size:clamp(32px,9.4vw,46px);letter-spacing:-.025em;line-height:.98;margin-top:2px;color:var(--gold)}
+.hero h1 span{display:block;color:var(--on-hero);font-size:.66em;font-style:italic;line-height:1.1;margin-top:4px;letter-spacing:0}
 .so .hero h1{font-size:clamp(40px,12vw,54px)}
 .so .hero h1 span{font-size:20px}
 .hero-image-wrap{width:104px;padding:4px;position:relative;isolation:isolate}
 .hero-image-wrap::before{content:"";position:absolute;inset:0;border:1px solid #d9bd8270;border-radius:999px 999px 6px 6px;z-index:-1}
-.hero-figure{height:112px;overflow:hidden;border-radius:999px 999px 3px 3px;background:#fffdf51c}
+.hero-figure{height:112px;overflow:hidden;border-radius:999px 999px 3px 3px;background:#d9bd821c}
 .hero-photo{display:block;width:100%;height:100%;object-fit:cover}
 
 /* Workspace */
