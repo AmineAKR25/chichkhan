@@ -285,3 +285,38 @@ test("a venue with no contact details still renders a footer", () => {
   }
   assert.ok(!/href="tel:"|href=""/.test(footer), "no empty links are left behind");
 });
+
+// --- Contact bar -------------------------------------------------------------
+
+const barOf = (menu) => renderMenuPage(menu).match(/<nav class="contact-bar"[\s\S]*?<\/nav>/)?.[0] ?? "";
+
+test("the contact bar names every icon and keeps the review on the right", () => {
+  for (const [slug, menu] of Object.entries(menus)) {
+    const html = renderMenuPage(menu);
+    const bar = barOf(menu);
+    assert.ok(bar, `${slug} has a bar`);
+    assert.ok(html.includes("has-contact-bar"), "the body knows, so the sticky rail docks beneath it");
+    // It comes before the hero, so it is the first thing a keyboard reaches after the skip link.
+    assert.ok(html.indexOf('class="contact-bar"') < html.indexOf('class="hero"'));
+    // Icon-only links must each carry a name, in the order the owner asked for.
+    const labels = [...bar.matchAll(/aria-label="([^"]+)"/g)].map((m) => m[1]).slice(1);
+    assert.deepEqual(labels, ["Facebook", "Instagram", "Appeler le +216 75 765 793", "Itinéraire sur Google Maps"], slug);
+    assert.ok(bar.includes('href="tel:+21675765793"') && !/tel:[^"]*"[^>]*target=/.test(bar), "the phone dials in place");
+    for (const [, attrs] of bar.matchAll(/<a ([^>]*href="https?:[^>]*)>/g)) assert.match(attrs, /target="_blank" rel="noopener"/);
+    assert.ok(bar.lastIndexOf("Laisser un avis") > bar.lastIndexOf("aria-label="), "the review comes last");
+  }
+});
+
+test("the bar only shows what the venue has, and disappears with nothing to show", () => {
+  const some = structuredClone(cafe);
+  some.venue.facebookUrl = "";
+  some.venue.reviewUrl = "";
+  const bar = barOf(some);
+  assert.ok(!bar.includes("Facebook") && !bar.includes("Laisser un avis") && bar.includes("Instagram"));
+
+  const none = structuredClone(cafe);
+  for (const key of ["phone", "mapsUrl", "reviewUrl", "instagramUrl", "facebookUrl"]) none.venue[key] = "";
+  const html = renderMenuPage(none);
+  assert.equal(barOf(none), "", "no empty strip");
+  assert.ok(!html.includes("has-contact-bar"), "and nothing below makes room for it");
+});

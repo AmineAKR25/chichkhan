@@ -23,6 +23,8 @@
      to curve the diamonds without pulling the edges off 45 degrees. Bow it
      harder and the tangents flatten until the grid reads as circles. */
   --motif:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cg fill='none' stroke='%237e5f25' stroke-opacity='.3' stroke-width='1.4'%3E%3Cpath d='M0 0Q37.07 22.93 60 60'/%3E%3Cpath d='M120 0Q82.93 22.93 60 60'/%3E%3Cpath d='M0 120Q37.07 97.07 60 60'/%3E%3Cpath d='M120 120Q82.93 97.07 60 60'/%3E%3C/g%3E%3Cg fill='%237e5f25' fill-opacity='.34'%3E%3Cpath d='M60 56.6Q60.7 59.3 63.4 60 60.7 60.7 60 63.4 59.3 60.7 56.6 60 59.3 59.3 60 56.6Z'/%3E%3Cpath d='M0 -3.4Q0.7 -0.7 3.4 0 0.7 0.7 0 3.4 -0.7 0.7 -3.4 0 -0.7 -0.7 0 -3.4Z'/%3E%3Cpath d='M120 -3.4Q120.7 -0.7 123.4 0 120.7 0.7 120 3.4 119.3 0.7 116.6 0 119.3 -0.7 120 -3.4Z'/%3E%3Cpath d='M0 116.6Q0.7 119.3 3.4 120 0.7 120.7 0 123.4 -0.7 120.7 -3.4 120 -0.7 119.3 0 116.6Z'/%3E%3Cpath d='M120 116.6Q120.7 119.3 123.4 120 120.7 120.7 120 123.4 119.3 120.7 116.6 120 119.3 119.3 120 116.6Z'/%3E%3C/g%3E%3C/svg%3E");
+  /* The same lattice in white, for the green side. */
+  --motif-light:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cg fill='none' stroke='%23ffffff' stroke-opacity='.3' stroke-width='1.4'%3E%3Cpath d='M0 0Q37.07 22.93 60 60'/%3E%3Cpath d='M120 0Q82.93 22.93 60 60'/%3E%3Cpath d='M0 120Q37.07 97.07 60 60'/%3E%3Cpath d='M120 120Q82.93 97.07 60 60'/%3E%3C/g%3E%3Cg fill='%23ffffff' fill-opacity='.34'%3E%3Cpath d='M60 56.6Q60.7 59.3 63.4 60 60.7 60.7 60 63.4 59.3 60.7 56.6 60 59.3 59.3 60 56.6Z'/%3E%3Cpath d='M0 -3.4Q0.7 -0.7 3.4 0 0.7 0.7 0 3.4 -0.7 0.7 -3.4 0 -0.7 -0.7 0 -3.4Z'/%3E%3Cpath d='M120 -3.4Q120.7 -0.7 123.4 0 120.7 0.7 120 3.4 119.3 0.7 116.6 0 119.3 -0.7 120 -3.4Z'/%3E%3Cpath d='M0 116.6Q0.7 119.3 3.4 120 0.7 120.7 0 123.4 -0.7 120.7 -3.4 120 -0.7 119.3 0 116.6Z'/%3E%3Cpath d='M120 116.6Q120.7 119.3 123.4 120 120.7 120.7 120 123.4 119.3 120.7 116.6 120 119.3 119.3 120 116.6Z'/%3E%3C/g%3E%3C/svg%3E");
 }
 
 /* The Restaurant wears the cover's other side: blanc sale paper under the same
@@ -43,7 +45,10 @@ body[data-menu="restaurant"]{
 .hero{border-bottom:1px solid var(--line)}
 .category-photo,.dish-photo{background:color-mix(in oklab,var(--photo-color) 30%,var(--paper))!important}
 *{box-sizing:border-box}
-html{scroll-behavior:smooth;scroll-padding-top:calc(var(--tools-offset,64px) + 12px)}
+:root{--bar-h:0px;--notch:env(safe-area-inset-top,0px)}
+.has-contact-bar{--bar-h:calc(44px + env(safe-area-inset-top,0px));--notch:0px}
+html:has(.has-contact-bar){--bar-h:calc(44px + env(safe-area-inset-top,0px))}
+html{scroll-behavior:smooth;scroll-padding-top:calc(var(--tools-offset,64px) + 12px + var(--bar-h))}
 /* The suede: grey noise blended into the green with soft-light, so it only
    lifts and dims the colour it is given and can never grey the page out. */
 body{margin:0;background-color:var(--paper);background-image:var(--grain);background-repeat:repeat;background-size:420px 420px;background-blend-mode:soft-light;color:var(--ink);font:18px/1.6 var(--sans);-webkit-font-smoothing:antialiased}
@@ -65,9 +70,25 @@ h1,h2{text-wrap:balance}
 .eyebrow{font:600 14px/1.5 var(--sans);letter-spacing:.15em;text-transform:uppercase}
 mark{background:var(--mark);color:inherit;border-radius:2px;padding:0 1px}
 
+/* The contact bar: one small-button strip that stays on screen. Ways to reach
+   the venue on the left as 44px icon targets, the review on the right as the
+   one word in the bar. It is sticky rather than fixed, so it keeps its own
+   place in the page and never covers the top of the carte. */
+.contact-bar{position:sticky;top:0;z-index:30;background:var(--hero);border-bottom:1px solid var(--line);padding-top:env(safe-area-inset-top,0px)}
+.contact-bar-inner{max-width:var(--content-width);margin:auto;height:44px;padding-inline:max(6px,calc(var(--gutter) - 10px));display:flex;align-items:center;justify-content:space-between;gap:10px}
+.contact-links{display:flex;align-items:center;gap:0}
+.contact-links a{display:grid;place-items:center;width:44px;height:44px;border-radius:50%;color:var(--gold-ink);transition:background var(--motion),color var(--motion)}
+.contact-links a:hover,.contact-links a:focus-visible{background:var(--plate-soft);color:var(--ink)}
+.contact-links svg{width:19px;height:19px}
+.contact-review{position:relative;display:inline-flex;align-items:center;gap:7px;height:32px;padding:0 14px;border:1px solid var(--gold-ink);border-radius:99px;font:600 14px/1 var(--sans);letter-spacing:.01em;color:var(--on-hero);white-space:nowrap;transition:background var(--motion)}
+/* The pill looks 32px tall but answers a full 44px tap. */
+.contact-review::after{content:"";position:absolute;inset:-6px -4px}
+.contact-review:hover,.contact-review:focus-visible{background:var(--plate-soft)}
+.contact-review svg{width:15px;height:15px;color:var(--gold-ink)}
+
 /* One band: logo, venue name and the entrance arch. The photo stays on the right. */
 .hero{background:var(--hero);color:var(--on-hero)}
-.hero-inner{max-width:var(--content-width);margin:auto;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;align-items:center;padding:calc(12px + env(safe-area-inset-top,0px)) var(--gutter) 16px}
+.hero-inner{max-width:var(--content-width);margin:auto;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;align-items:center;padding:calc(12px + var(--notch)) var(--gutter) 16px}
 .hero-copy{min-width:0;display:flex;align-items:center;gap:14px}
 .hero-titles{min-width:0;display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 16px}
 .hero-meta{margin-left:auto;font:600 14px/1.4 var(--sans);letter-spacing:.14em;text-transform:uppercase;color:var(--hero-meta);white-space:nowrap}
@@ -106,7 +127,7 @@ mark{background:var(--mark);color:inherit;border-radius:2px;padding:0 1px}
 .menu-content{min-width:0}
 
 /* Sticky toolbar: category rail on phones and tablets, search field on desktop. */
-.menu-tools{display:none;position:sticky;top:0;z-index:20;background:var(--paper);margin-inline:calc(var(--gutter) * -1);padding:calc(8px + env(safe-area-inset-top,0px)) var(--gutter) 8px;border-bottom:1px solid var(--line)}
+.menu-tools{display:none;position:sticky;top:var(--bar-h);z-index:20;background:var(--paper);margin-inline:calc(var(--gutter) * -1);padding:calc(8px + var(--notch)) var(--gutter) 8px;border-bottom:1px solid var(--line)}
 :is(.enhanced,.menu-boot) .menu-tools{display:block}
 .category-rail{display:flex;align-items:center;gap:8px}
 .category-toggle,.search-toggle{display:grid;place-items:center;flex-shrink:0;width:44px;height:44px;border-radius:50%;border:1px solid var(--control-line);background:var(--surface);color:var(--ink)}
@@ -278,6 +299,13 @@ body[data-menu="restaurant"]::before{
   content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
   background:var(--motif) repeat 50% 0/var(--motif-size) var(--motif-size);opacity:.5;
 }
+/* The Café carries the Restaurant's lattice in white. White on green reads
+   about twice as strongly as bronze on cream, so the layer is set to .22
+   rather than .5: both lines sit 1.2:1 off their paper and look alike. */
+body[data-menu="cafe"]::before{
+  content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
+  background:var(--motif-light) repeat 50% 0/var(--motif-size,56px) var(--motif-size,56px);opacity:.22;
+}
 /* The sticky toolbar rides over the carte, so it is the one opaque plate. */
 body[data-menu="restaurant"] .menu-tools{background:var(--surface)}
 /* Placeholders are mixed harder, or the arches wash out into the cream. */
@@ -298,7 +326,7 @@ body[data-menu="restaurant"] .hero::after{content:"";position:absolute;left:0;ri
 
 @media(min-width:640px){
   :root{--gutter:32px}
-  .hero-inner{gap:32px;padding-block:calc(16px + env(safe-area-inset-top,0px)) 20px}
+  .hero-inner{gap:32px;padding-block:calc(16px + var(--notch)) 20px}
   .hero h1{font-size:54px}.so .hero h1{font-size:62px}.so .hero h1 span{font-size:24px}
   .hero-logo{width:87px;height:118px}
   .hero-image-wrap{width:150px;padding:5px}
@@ -313,7 +341,7 @@ body[data-menu="restaurant"] .hero::after{content:"";position:absolute;left:0;ri
 }
 @media(min-width:1024px){
   :root{--gutter:40px}
-  html{scroll-padding-top:calc(var(--tools-offset,84px) + 16px)}
+  html{scroll-padding-top:calc(var(--tools-offset,84px) + 16px + var(--bar-h))}
   .hero-inner{grid-template-columns:minmax(0,1fr) auto;gap:60px;padding-block:28px}
   .hero-meta{font-size:15.5px}
   .hero h1{font-size:76px;letter-spacing:-.035em;line-height:.95}
@@ -321,10 +349,10 @@ body[data-menu="restaurant"] .hero::after{content:"";position:absolute;left:0;ri
   .hero-logo{width:108px;height:146px}
   .hero-image-wrap{width:224px;padding:8px}
   .menu-workspace{display:grid;grid-template-columns:224px minmax(0,1fr);gap:44px;padding-bottom:58px}
-  .menu-sidebar,:is(.enhanced,.menu-boot) .menu-sidebar{display:block;position:sticky;top:0;align-self:start;padding-top:0}
+  .menu-sidebar,:is(.enhanced,.menu-boot) .menu-sidebar{display:block;position:sticky;top:var(--bar-h);align-self:start;padding-top:0}
   /* The sidebar heading matches the toolbar height so both rules line up. */
   .sidebar-heading{min-height:var(--tools-offset,85px);padding-block:0}
-  .category-nav{display:block;max-height:calc(100dvh - var(--tools-offset,85px) - 8px);overflow:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:var(--control-line) transparent;padding:14px 8px 16px 0}
+  .category-nav{display:block;max-height:calc(100dvh - var(--tools-offset,85px) - var(--bar-h) - 8px);overflow:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:var(--control-line) transparent;padding:14px 8px 16px 0}
   .category-nav a{font-size:17.5px}
   .menu-tools{margin-inline:0;padding:16px 0}
   .category-rail{display:none}
@@ -416,12 +444,12 @@ body[data-menu="restaurant"] .hero::after{content:"";position:absolute;left:0;ri
 @media print{
   *,*::before,*::after{animation:none!important;transition:none!important;transform:none!important}
   :root{--paper:#fff;--ink:#000;--muted:#333}
-  .hero-image-wrap,.hero-logo,.menu-sidebar,.menu-tools,footer,.skip,dialog,.search-status,.empty-state,.selection-bar,.add-item{display:none!important}
+  .contact-bar,.hero-image-wrap,.hero-logo,.menu-sidebar,.menu-tools,footer,.skip,dialog,.search-status,.empty-state,.selection-bar,.add-item{display:none!important}
   .hero{background:white;color:black}.hero-inner{display:block;padding:0}.hero h1,.so .hero h1{font:500 32px/1.2 var(--serif);color:black}.hero h1 span{display:inline;font:inherit;color:black}
   .menu-workspace,.category-layout{display:block;padding:0}.menu-section[hidden],.dish[hidden]{display:block!important}.category-photo,.dish-photo{display:none}
   .dish.has-photo{display:block}.dish{break-inside:avoid}.section-title{break-after:avoid}body{background:white;color:black;padding:0}
   /* No wall, no sheet, no lattice on paper: ink and white only. */
-  body[data-menu="restaurant"]::before,body[data-menu="restaurant"] .hero::after{display:none!important}
+  body[data-menu="restaurant"]::before,body[data-menu="restaurant"] .hero::after,body[data-menu="cafe"]::before{display:none!important}
   body[data-menu="restaurant"] .hero,
   body[data-menu="restaurant"] .menu-workspace,
   body[data-menu="restaurant"] .menu-message{background:white!important;border:0!important;box-shadow:none!important;border-radius:0!important}
@@ -429,6 +457,6 @@ body[data-menu="restaurant"] .hero::after{content:"";position:absolute;left:0;ri
 /* When the reader asks for more contrast the texture is the first thing to go. */
 @media(prefers-contrast:more){
   body[data-menu="restaurant"]{--muted:#3f4a41;--line:#b6ab94;--control-line:#7d715c;--gold-ink:#5f4718;--sheet-paper:#f7f2e8}
-  body[data-menu="restaurant"]::before{display:none}
+  body[data-menu="restaurant"]::before,body[data-menu="cafe"]::before{display:none}
   body[data-menu="restaurant"] .hero{background-image:none}
 }
