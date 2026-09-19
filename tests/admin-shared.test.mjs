@@ -49,11 +49,14 @@ test("products need a name, a valid price and a category", () => {
 });
 
 test("the page header checks only the fields it is sent", async () => {
-  const { validateVenueDetails, PHOTO_POSITIONS } = await import("../src/admin/shared.js");
-  assert.deepEqual(validateVenueDetails({ heroFocusY: 50 }), { errors: {}, data: { heroFocusY: 50 } });
+  const { validateVenueDetails, PHOTO_SHAPES } = await import("../src/admin/shared.js");
   assert.deepEqual(validateVenueDetails({ title: "  SO  ", subtitle: "" }).data, { title: "SO", subtitle: "" });
   assert.ok(validateVenueDetails({ title: "" }).errors.title);
   assert.ok(validateVenueDetails({ name: "x".repeat(121) }).errors.name);
-  for (const value of [-1, 101, 12.5, "", null, "middle"]) assert.ok(validateVenueDetails({ heroFocusY: value }).errors.heroFocusY, String(value));
-  assert.deepEqual(PHOTO_POSITIONS.map((option) => option.value), [0, 50, 100]);
+  // A field that is not sent is neither checked nor saved.
+  assert.deepEqual(validateVenueDetails({}), { errors: {}, data: {} });
+  // Every photo frame the console crops to is the same shape the menu shows,
+  // so one crop is right on a phone and on a computer alike.
+  assert.equal(PHOTO_SHAPES.hero.aspect, PHOTO_SHAPES.arch.aspect);
+  assert.equal(PHOTO_SHAPES.logo.aspect, 1);
 });

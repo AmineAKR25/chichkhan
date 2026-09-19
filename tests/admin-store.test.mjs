@@ -384,14 +384,14 @@ test("the page header changes field by field, is checked, logged, and stays in i
     assert.deepEqual([page.subtitle, page.eyebrow, page.heroImageAlt], ["Café & Salon", "Djerba", "La façade"]);
     assert.deepEqual((await publicMenu(pg, "restaurant")).venue, restaurantBefore, "the other venue is untouched");
 
-    // The photo window sends only the position; the texts stay as they are.
-    const moved = await run(db, "venue.update", "cafe", { heroFocusY: 100 });
-    assert.equal(moved.message, "La photo principale de la page Café affiche maintenant sa partie basse.");
-    assert.equal(moved.state.venue.heroFocusY, 100);
-    assert.equal(moved.state.venue.subtitle, "Café & Salon");
-    assert.equal((await run(db, "venue.update", "cafe", { heroFocusY: 100 })).message, "Aucune modification à enregistrer.");
+    // One field at a time: the rest stay as they are, and re-sending the same
+    // value changes nothing.
+    const retitled = await run(db, "venue.update", "cafe", { subtitle: "Salon de thé" });
+    assert.equal(retitled.state.venue.subtitle, "Salon de thé");
+    assert.equal(retitled.state.venue.eyebrow, "Djerba");
+    assert.equal((await run(db, "venue.update", "cafe", { subtitle: "Salon de thé" })).message, "Aucune modification à enregistrer.");
 
-    for (const [input, field] of [[{ title: "  " }, "title"], [{ name: "" }, "name"], [{ heroFocusY: 101 }, "heroFocusY"], [{ heroFocusY: "top" }, "heroFocusY"], [{ subtitle: "x".repeat(61) }, "subtitle"]]) {
+    for (const [input, field] of [[{ title: "  " }, "title"], [{ name: "" }, "name"], [{ subtitle: "x".repeat(61) }, "subtitle"]]) {
       await assert.rejects(run(db, "venue.update", "cafe", input), (error) => Boolean(error.fields?.[field]), field);
     }
     await rejects(run(db, "venue.update", "cafe", {}), 400, /Aucune modification à enregistrer/);
@@ -399,5 +399,43 @@ test("the page header changes field by field, is checked, logged, and stays in i
     const history = await loadAudit(db, "cafe");
     assert.deepEqual(history.entries.map((entry) => entry.action), ["update", "update"]);
     assert.ok(history.entries.every((entry) => entry.recordType === "venue" && entry.actor === "owner"));
+  });
+});
+
+// The whole photo is kept beside the crop the menu shows, so reframing always
+// cuts from the original instead of cutting a crop out of a previous crop.
+test("photo keys: the original is kept beside the crop, and survives reframing", async () => {
+  await withDb(async ({ db }) => {
+    const { products } = await loadVenueState(db, "cafe");
+    const product = products[0];
+    const crop = "products/cafe/1-aaaaaaaaaa.webp";
+    const source = "products/cafe/1-1111111111.webp";
+    const where = { venue: "cafe", actor: "owner", target: "product", id: product.id };
+
+    // Choosing a file saves both.
+    await setImageKey(db, { ...where, key: crop, originalKey: source });
+    let resolved = await resolveImageTarget(db, "cafe", { target: "product", id: product.id });
+    assert.equal(resolved.currentKey, crop);
+    assert.equal(resolved.currentOriginalKey, source);
+
+    // Reframing sends only the new crop: the original must stay exactly as it
+    // is, or the next crop would be cut from the last one.
+    const recrop = "products/cafe/1-bbbbbbbbbb.webp";
+    const reframed = await setImageKey(db, { ...where, key: recrop });
+    resolved = await resolveImageTarget(db, "cafe", { target: "product", id: product.id });
+    assert.equal(resolved.currentOriginalKey, source, "the original survived the reframe");
+    assert.deepEqual(reframed.releasedKeys, [crop], "only the old crop is released");
+    assert.equal(await isImageKeyReferenced(db, source), true);
+
+    // A new file replaces both, and both old objects are released.
+    const second = "products/cafe/1-cccccccccc.webp";
+    const secondSource = "products/cafe/1-2222222222.webp";
+    const replaced = await setImageKey(db, { ...where, key: second, originalKey: secondSource });
+    assert.deepEqual(replaced.releasedKeys.sort(), [recrop, source].sort());
+
+    // Removing the photo clears the original too, leaving nothing orphaned.
+    const removed = await runOperation(db, "image.remove", { venue: "cafe", actor: "owner", input: { target: "product", id: product.id } });
+    assert.deepEqual(removed.releasedKeys.sort(), [second, secondSource].sort());
+    assert.equal(await isImageKeyReferenced(db, secondSource), false);
   });
 });

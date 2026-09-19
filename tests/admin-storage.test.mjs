@@ -2,7 +2,12 @@
 // locally), exercised against a recording fetch: no network, no credentials.
 import test from "node:test";
 import assert from "node:assert/strict";
-import { IMAGE_KEY_PATTERN, createStorage, imageKeyFor, sniffImageType, storageConfig } from "../lib/admin/storage.js";
+import { readFile, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { randomUUID } from "node:crypto";
+import { IMAGE_KEY_PATTERN, createDiskStorage, createStorage, imageKeyFor, sniffImageType, storageConfig } from "../lib/admin/storage.js";
+import { uploadStatus } from "../lib/admin/handler.js";
 
 const r2 = {
   S3_ENDPOINT: "https://account.r2.cloudflarestorage.com",
@@ -76,4 +81,39 @@ test("uploads and deletions are signed S3 requests to the bucket", async () => {
   await assert.rejects(failing.putObject("products/cafe/1-0123456789.png", new Uint8Array(1), "image/png"), /403/);
   assert.equal(await failing.probe(), false);
   assert.equal(createStorage(storageConfig({})), null);
+});
+
+// The development stand-in: a folder behaving like the bucket, so photos can
+// be uploaded and cropped locally with no S3 service installed.
+test("the local folder storage writes, deletes and refuses keys it did not make", async () => {
+  const dir = join(tmpdir(), `chichkhan-uploads-${randomUUID()}`);
+  const disk = createDiskStorage(dir);
+  assert.equal(disk.disk, true);
+  assert.equal(disk.local, true);
+  assert.equal(await disk.probe(), true);
+
+  const key = imageKeyFor({ venue: "restaurant", target: "category", slug: "entrees" }, "image/webp");
+  await disk.putObject(key, new Uint8Array([1, 2, 3, 4]), "image/webp");
+  assert.deepEqual([...(await readFile(join(dir, key)))], [1, 2, 3, 4]);
+
+  // Only keys this module builds are ever written, and never outside the folder.
+  await assert.rejects(() => disk.putObject("../escape.webp", new Uint8Array([0]), "image/webp"), /unexpected key/i);
+  await assert.rejects(() => disk.putObject("products/restaurant/../../escape.webp", new Uint8Array([0]), "image/webp"), /unexpected key/i);
+  await assert.rejects(() => disk.putObject(key, new Uint8Array([0]), "image/gif"), /Unsupported image type/);
+
+  assert.equal(await disk.deleteObject(key), true);
+  await assert.rejects(() => readFile(join(dir, key)));
+  assert.equal(await disk.deleteObject(key), true); // deleting twice is fine
+  await rm(dir, { recursive: true, force: true });
+});
+
+test("uploads are enabled by the local folder, and never on Vercel", async () => {
+  const dir = join(tmpdir(), `chichkhan-uploads-${randomUUID()}`);
+  const disk = createDiskStorage(dir);
+  const local = await uploadStatus({ LOCAL_UPLOADS_DIR: dir }, disk);
+  assert.equal(local.enabled, true);
+  assert.equal(local.local, true);
+  // Without any storage the console still says so rather than pretending.
+  assert.equal((await uploadStatus({}, null)).enabled, false);
+  assert.equal((await uploadStatus({ VERCEL: "1" }, null)).enabled, false);
 });

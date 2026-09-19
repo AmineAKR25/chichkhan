@@ -7,18 +7,27 @@ export const VENUE_LABELS = { cafe: "Café", restaurant: "Restaurant" };
 
 export const LIMITS = { name: 120, description: 800, note: 300, slug: 60, groupName: 60, alt: 200, venueTitle: 60, subtitle: 60, eyebrow: 80, venueName: 120 };
 
-// Which part of the main photo the page header shows (object-position, %).
-export const PHOTO_POSITIONS = [
-  { value: 0, label: "Haut" },
-  { value: 50, label: "Milieu" },
-  { value: 100, label: "Bas" },
-];
 export const MAX_PRICE_MILLIMES = 9999999; // 9999.999 DT
 
 // Photos: the browser resizes large photos before upload; the server accepts
 // at most MAX_UPLOAD_BYTES (Vercel functions take request bodies up to 4.5 MB).
 export const IMAGE_TYPES = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" };
 export const MAX_UPLOAD_BYTES = 4 * 1024 * 1024;
+
+// Each photo slot has a shape. The cropper frames the photo in that shape and
+// saves exactly what it frames, so what the administrator sees while cropping
+// is what the menu shows. `aspect` is width / height; `width` is the saved
+// width in pixels, large enough for the biggest frame on the public page and
+// no larger.
+export const PHOTO_SHAPES = {
+  // The logo is shown whole, never cropped, so this frame only trims the
+  // empty space around it.
+  logo: { aspect: 1, width: 512, mask: "square", note: "Le logo est affiché en entier, jamais rogné." },
+  // The header photo and the category and product photos all sit in the same
+  // arch, at the same shape on every screen, so one crop is right everywhere.
+  hero: { aspect: 13 / 14, width: 1200, mask: "arch", note: "Ce cadre est exactement celui du menu public." },
+  arch: { aspect: 13 / 14, width: 900, mask: "arch", note: "Ce cadre est exactement celui du menu public." },
+};
 export const MAX_SOURCE_BYTES = 25 * 1024 * 1024;
 
 // "12.500", "12,5", "12" and "12.500 DT" are 12500 millimes. Anything else,
@@ -136,8 +145,8 @@ export function validateGroup(input = {}) {
   return { errors, data: { name } };
 }
 
-// The page header. Only the fields sent are checked and saved: the "Change
-// name and text" panel sends the texts, the photo window the photo position.
+// The page header. Only the fields sent are checked and saved, so the "Change
+// name and text" panel can send the texts without touching anything else.
 export function validateVenueDetails(input = {}) {
   const errors = {};
   const data = {};
@@ -161,11 +170,6 @@ export function validateVenueDetails(input = {}) {
   if (sent("heroImageAlt")) {
     data.heroImageAlt = cleanLine(input.heroImageAlt);
     optionalText(errors, "heroImageAlt", data.heroImageAlt, "la description de la photo", LIMITS.alt);
-  }
-  if (sent("heroFocusY")) {
-    const focus = Number(input.heroFocusY);
-    if (input.heroFocusY === null || input.heroFocusY === "" || !Number.isInteger(focus) || focus < 0 || focus > 100) errors.heroFocusY = "Choisissez Haut, Milieu ou Bas.";
-    else data.heroFocusY = focus;
   }
   return { errors, data };
 }

@@ -1,20 +1,44 @@
 @font-face{font-family:"Cormorant Garamond";font-style:normal;font-weight:400 600;font-display:swap;src:url('/assets/fonts/display.woff2') format('woff2')}
 @font-face{font-family:"Cormorant Garamond";font-style:italic;font-weight:400 500;font-display:swap;src:url('/assets/fonts/display-italic.woff2') format('woff2')}
 @font-face{font-family:"DM Sans";font-style:normal;font-weight:400 700;font-display:swap;src:url('/assets/fonts/body.woff2') format('woff2')}
-/* The printed cover: bottle green suede, gold foil. Both venues carry the
-   same colours, so the Café and the Restaurant read as one house, and the
-   page keeps them whatever the phone's light or dark setting says. */
+/* The printed cover: bottle green suede, gold foil. These are the Café's
+   colours; the Restaurant re-cuts the same tokens in the cover's cream below,
+   scoped by data-menu. Either way the page keeps its own colours whatever the
+   phone's light or dark setting says. */
 :root{
   color-scheme:dark;
   --paper:#143a38;--surface:#18443f;--ink:#ecdfc0;--brand:#d9bd82;--on-brand:#12302c;
   --hero:#10322f;--on-hero:#ecdfc0;--gold:#d9bd82;
   --muted:#b6ac8e;--line:#2a4a45;--control-line:#55706a;--soft:#1b4842;--focus:#e0b867;
   --house-bg:#3a3020;--house-ink:#ecd49c;--mark:#5c4a1f;--shadow:#00000066;--arch-line:#d9bd8266;
-  --sheet:#1d4a44;--sheet-line:#2f5b54;
+  --sheet:#1d4a44;--sheet-line:#2f5b54;--gold-ink:#d9bd82;
+  /* The top band's foil: the title, the small caps, the empty plates and the
+     arch outline. Tokens, so a venue can re-cut the band without new rules. */
+  --hero-meta:#d9bd82cc;--plate:#d9bd821c;--plate-soft:#d9bd8214;--arch-outline:#d9bd8270;
   --serif:"Cormorant Garamond",Georgia,serif;--sans:"DM Sans","Avenir Next",sans-serif;
   --gutter:20px;--content-width:1280px;--motion:180ms;
   /* Two stitched noise layers: the cover's cloudy mottling and its fibre. */
   --grain:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='420' height='420'%3E%3Cfilter id='m' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.016' numOctaves='4' stitchTiles='stitch' seed='7'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Cfilter id='f' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch' seed='3'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='420' height='420' filter='url(%23m)' opacity='0.55'/%3E%3Crect width='420' height='420' filter='url(%23f)' opacity='0.3'/%3E%3C/svg%3E");
+  /* The cover's lattice: diagonals crossing at every vertex, bowed just enough
+     to curve the diamonds without pulling the edges off 45 degrees. Bow it
+     harder and the tangents flatten until the grid reads as circles. */
+  --motif:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cg fill='none' stroke='%237e5f25' stroke-opacity='.3' stroke-width='1.4'%3E%3Cpath d='M0 0Q37.07 22.93 60 60'/%3E%3Cpath d='M120 0Q82.93 22.93 60 60'/%3E%3Cpath d='M0 120Q37.07 97.07 60 60'/%3E%3Cpath d='M120 120Q82.93 97.07 60 60'/%3E%3C/g%3E%3Cg fill='%237e5f25' fill-opacity='.34'%3E%3Cpath d='M60 56.6Q60.7 59.3 63.4 60 60.7 60.7 60 63.4 59.3 60.7 56.6 60 59.3 59.3 60 56.6Z'/%3E%3Cpath d='M0 -3.4Q0.7 -0.7 3.4 0 0.7 0.7 0 3.4 -0.7 0.7 -3.4 0 -0.7 -0.7 0 -3.4Z'/%3E%3Cpath d='M120 -3.4Q120.7 -0.7 123.4 0 120.7 0.7 120 3.4 119.3 0.7 116.6 0 119.3 -0.7 120 -3.4Z'/%3E%3Cpath d='M0 116.6Q0.7 119.3 3.4 120 0.7 120.7 0 123.4 -0.7 120.7 -3.4 120 -0.7 119.3 0 116.6Z'/%3E%3Cpath d='M120 116.6Q120.7 119.3 123.4 120 120.7 120.7 120 123.4 119.3 120.7 116.6 120 119.3 119.3 120 116.6Z'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* The Restaurant wears the cover's other side: blanc sale paper under the same
+   gold lattice, the band cut in a deeper cream. Every colour is an override of
+   the tokens above, so the Café keeps the bottle green untouched. */
+body[data-menu="restaurant"]{
+  color-scheme:light;
+  --paper:#f2ece0;--surface:#f7f2e8;--ink:#16302b;--brand:#d9bd82;--on-brand:#12302c;
+  --hero:#e5d8bf;--on-hero:#16302b;--gold:#6f5320;
+  --muted:#505950;--line:#ddd4c2;--control-line:#7d7159;--soft:#eae2d2;--focus:#6c511b;
+  --house-bg:#10322f;--house-ink:#e2c68f;--mark:#f2dfae;--shadow:#3a2f1c33;--arch-line:#7e5f2559;
+  --sheet:#f7f2e8;--sheet-line:#e2d9c6;
+  --hero-meta:#6f5320;--plate:#7e5f2524;--plate-soft:#7e5f2518;--arch-outline:#7e5f2580;
+  /* Gold reads as foil under dark ink, never as text on cream: --gold-ink is
+     the bronze that small marks and accents take instead. */
+  --gold-ink:#6c511b;--sheet-paper:#f7f2e8cc;--motif-size:56px;
 }
 .hero{border-bottom:1px solid var(--line)}
 .category-photo,.dish-photo{background:color-mix(in oklab,var(--photo-color) 30%,var(--paper))!important}
@@ -22,7 +46,7 @@
 html{scroll-behavior:smooth;scroll-padding-top:calc(var(--tools-offset,64px) + 12px)}
 /* The suede: grey noise blended into the green with soft-light, so it only
    lifts and dims the colour it is given and can never grey the page out. */
-body{margin:0;background-color:var(--paper);background-image:var(--grain);background-repeat:repeat;background-size:420px 420px;background-blend-mode:soft-light;color:var(--ink);font:16px/1.6 var(--sans);-webkit-font-smoothing:antialiased}
+body{margin:0;background-color:var(--paper);background-image:var(--grain);background-repeat:repeat;background-size:420px 420px;background-blend-mode:soft-light;color:var(--ink);font:18px/1.6 var(--sans);-webkit-font-smoothing:antialiased}
 @supports not (background-blend-mode:soft-light){body{background-image:none}}
 a{color:inherit;text-decoration:none}
 button,input{font:inherit;color:inherit}
@@ -38,7 +62,7 @@ h1,h2{text-wrap:balance}
 .sr-only{position:absolute;width:1px;height:1px;padding:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0}
 .skip{position:fixed;top:-100px;left:16px;padding:12px 18px;background:var(--surface);z-index:100}
 .skip:focus{top:12px}
-.eyebrow{font:600 11px/1.5 var(--sans);letter-spacing:.15em;text-transform:uppercase}
+.eyebrow{font:600 14px/1.5 var(--sans);letter-spacing:.15em;text-transform:uppercase}
 mark{background:var(--mark);color:inherit;border-radius:2px;padding:0 1px}
 
 /* One band: logo, venue name and the entrance arch. The photo stays on the right. */
@@ -46,34 +70,34 @@ mark{background:var(--mark);color:inherit;border-radius:2px;padding:0 1px}
 .hero-inner{max-width:var(--content-width);margin:auto;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;align-items:center;padding:calc(12px + env(safe-area-inset-top,0px)) var(--gutter) 16px}
 .hero-copy{min-width:0;display:flex;align-items:center;gap:14px}
 .hero-titles{min-width:0;display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 16px}
-.hero-meta{margin-left:auto;font:600 11px/1.4 var(--sans);letter-spacing:.14em;text-transform:uppercase;color:#d9bd82cc;white-space:nowrap}
+.hero-meta{margin-left:auto;font:600 14px/1.4 var(--sans);letter-spacing:.14em;text-transform:uppercase;color:var(--hero-meta);white-space:nowrap}
 /* Logo and photographs come from R2; each frame is its own placeholder. */
 .hero-logo{display:block;flex-shrink:0;width:68px;height:92px}
 /* Nothing to show yet: a faint gold plate keeps the row from collapsing. */
-.hero-logo:not(.has-image){width:52px;height:70px;border-radius:999px 999px 6px 6px;background:#d9bd8214}
+.hero-logo:not(.has-image){width:52px;height:70px;border-radius:999px 999px 6px 6px;background:var(--plate-soft)}
 .hero-logo img{display:block;width:100%;height:100%;object-fit:contain}
 .hero h1{font-size:clamp(32px,9.4vw,46px);letter-spacing:-.025em;line-height:.98;margin-top:2px;color:var(--gold)}
 .hero h1 span{display:block;color:var(--on-hero);font-size:.66em;font-style:italic;line-height:1.1;margin-top:4px;letter-spacing:0}
 .so .hero h1{font-size:clamp(40px,12vw,54px)}
 .so .hero h1 span{font-size:20px}
 .hero-image-wrap{width:104px;padding:4px;position:relative;isolation:isolate}
-.hero-image-wrap::before{content:"";position:absolute;inset:0;border:1px solid #d9bd8270;border-radius:999px 999px 6px 6px;z-index:-1}
-.hero-figure{height:112px;overflow:hidden;border-radius:999px 999px 3px 3px;background:#d9bd821c}
+.hero-image-wrap::before{content:"";position:absolute;inset:0;border:1px solid var(--arch-outline);border-radius:999px 999px 6px 6px;z-index:-1}
+.hero-figure{aspect-ratio:13/14;overflow:hidden;border-radius:999px 999px 3px 3px;background:var(--plate)}
 .hero-photo{display:block;width:100%;height:100%;object-fit:cover}
 
 /* Workspace */
 .menu-workspace{max-width:var(--content-width);margin:auto;padding:0 var(--gutter) 40px}
 .menu-sidebar{padding-top:20px}
 .sidebar-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 10px 14px;border-bottom:1px solid var(--line)}
-.sidebar-heading h2{font:500 15px/1.5 var(--sans)}
-.sidebar-heading>span{color:var(--muted);font-size:12px}
+.sidebar-heading h2{font:500 18.5px/1.5 var(--sans)}
+.sidebar-heading>span{color:var(--muted);font-size:15.5px}
 .category-nav{display:grid;gap:18px;grid-template-columns:repeat(2,minmax(0,1fr));padding-top:14px}
 .category-nav>a{grid-column:1/-1}
 .nav-group{min-width:0}
-.nav-group-label{font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);padding:16px 12px 6px}
-.category-nav a,.dialog-categories a{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 13px;min-height:44px;font-size:14px;border-radius:8px;transition:background var(--motion),color var(--motion)}
+.nav-group-label{font-size:14px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);padding:16px 12px 6px}
+.category-nav a,.dialog-categories a{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 13px;min-height:52px;font-size:17.5px;border-radius:8px;transition:background var(--motion),color var(--motion)}
 .category-nav a span,.dialog-categories a span{min-width:0}
-.category-nav a small,.dialog-categories a small{font-size:12px;font-variant-numeric:tabular-nums;flex-shrink:0;color:var(--muted)}
+.category-nav a small,.dialog-categories a small{font-size:15.5px;font-variant-numeric:tabular-nums;flex-shrink:0;color:var(--muted)}
 .category-nav a[aria-current],.dialog-categories a[aria-current]{background:var(--brand);color:var(--on-brand)}
 .category-nav a[aria-current] small,.dialog-categories a[aria-current] small{color:var(--on-brand)}
 .category-nav a:hover:not([aria-current]),.dialog-categories a:hover:not([aria-current]){background:var(--soft)}
@@ -90,29 +114,29 @@ mark{background:var(--mark);color:inherit;border-radius:2px;padding:0 1px}
 .search-open .search-toggle{background:var(--brand);border-color:var(--brand);color:var(--on-brand)}
 .category-chips{display:flex;gap:6px;flex:1;min-width:0;overflow-x:auto;scrollbar-width:none;padding:2px;position:relative;-webkit-mask-image:linear-gradient(90deg,transparent,#000 12px,#000 calc(100% - 20px),transparent);mask-image:linear-gradient(90deg,transparent,#000 12px,#000 calc(100% - 20px),transparent)}
 .category-chips::-webkit-scrollbar{display:none}
-.chip{display:inline-flex;align-items:center;flex-shrink:0;min-height:40px;padding:0 14px;border-radius:99px;border:1px solid var(--line);background:var(--surface);font-size:14px;white-space:nowrap;transition:background var(--motion),color var(--motion),border-color var(--motion)}
+.chip{display:inline-flex;align-items:center;flex-shrink:0;min-height:48px;padding:0 18px;border-radius:99px;border:1px solid var(--line);background:var(--surface);font-size:17.5px;white-space:nowrap;transition:background var(--motion),color var(--motion),border-color var(--motion)}
 .chip:first-child{margin-left:8px}.chip:last-child{margin-right:14px}
 .chip[aria-current]{background:var(--brand);border-color:var(--brand);color:var(--on-brand)}
 .search-tools{display:none;padding-top:8px}
 .search-open .search-tools{display:block}
 .search-box{display:flex;align-items:center;gap:10px;min-height:48px;border:1px solid var(--control-line);border-radius:10px;padding:0 13px;background:var(--surface);transition:border-color var(--motion)}
-.search-box:focus-within{outline:2px solid var(--brand);outline-offset:2px}
+.search-box:focus-within{outline:2px solid var(--gold-ink);outline-offset:2px}
 .search-box>svg{width:18px;color:var(--muted)}
-.search-box input{min-width:0;width:100%;padding:11px 0;background:transparent;border:0;font-size:16px;outline:none;line-height:1.5}
+.search-box input{min-width:0;width:100%;padding:11px 0;background:transparent;border:0;font-size:18px;outline:none;line-height:1.5}
 .search-box input::placeholder{color:var(--muted);opacity:1}
 .search-box input::-webkit-search-cancel-button{display:none}
 .search-box button{display:flex;align-items:center;justify-content:center;flex-shrink:0;width:44px;height:44px;background:transparent;border-radius:50%;margin-right:-10px}
 .search-box button:hover{background:var(--soft)}
-kbd{display:none;flex-shrink:0;font:12px/1 var(--sans);padding:6px;border:1px solid var(--line);border-radius:4px;color:var(--muted)}
+kbd{display:none;flex-shrink:0;font:13px/1 var(--sans);padding:6px;border:1px solid var(--line);border-radius:4px;color:var(--muted)}
 .has-query kbd{display:none}
 .search-suggestions{display:none;padding:10px 2px 4px}
 .search-tools:focus-within .search-suggestions{display:block}
 .has-query .search-suggestions{display:none!important}
-.search-suggestions p{font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.search-suggestions p{font-size:14px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
 .search-suggestions div{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
-.search-suggestions button{min-height:40px;padding:0 14px;border-radius:99px;border:1px solid var(--line);background:var(--surface);font-size:14px}
-.search-suggestions button:hover{border-color:var(--brand)}
-.search-status{font-size:14px;color:var(--muted);padding:16px 0 0}
+.search-suggestions button{min-height:48px;padding:0 18px;border-radius:99px;border:1px solid var(--line);background:var(--surface);font-size:17.5px}
+.search-suggestions button:hover{border-color:var(--gold-ink)}
+.search-status{font-size:17.5px;color:var(--muted);padding:16px 0 0}
 .search-status:empty{display:none}
 
 /* Sections */
@@ -121,39 +145,39 @@ kbd{display:none;flex-shrink:0;font:12px/1 var(--sans);padding:6px;border:1px so
 .menu-section{padding:22px 0 6px;display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:16px;align-items:center}
 .category-layout,.category-visual{display:contents}
 .section-title{grid-column:1;grid-row:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center;min-width:0}
-.section-title h2{font-size:32px;letter-spacing:-.025em}
+.section-title h2{font-size:38px;letter-spacing:-.025em}
 /* Headings receive focus only as a jump target for screen readers. */
 .section-title h2:focus,.section-title h2:focus-visible{outline:none}
-.section-title>span{font:500 13px/1.4 var(--sans);color:var(--muted)}
+.section-title>span{font:500 16.5px/1.4 var(--sans);color:var(--muted)}
 /* The solid placeholder, cut like the entrance arch. */
 .category-photo{grid-column:2;grid-row:1;position:relative;overflow:hidden;width:clamp(128px,40vw,176px);aspect-ratio:13/14;margin:5px 5px 0 0;background:var(--photo-color);border-radius:999px 999px 3px 3px;box-shadow:0 0 0 4px var(--paper),0 0 0 5px var(--arch-line)}
 .category-photo img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
-.section-note{grid-column:1/-1;font-size:14px;line-height:1.6;color:var(--muted);margin-top:16px}
+.section-note{grid-column:1/-1;font-size:17.5px;line-height:1.6;color:var(--muted);margin-top:16px}
 .dish-grid{grid-column:1/-1;margin-top:10px;min-width:0}
 .dish{padding:14px 0;border-bottom:1px solid var(--line);min-width:0}
 .dish-heading{display:flex;align-items:baseline;gap:10px}
-.dish h3{font:500 16px/1.45 var(--sans);min-width:0}
+.dish h3{font:500 20.5px/1.45 var(--sans);min-width:0}
 .dish-rule{display:none}
-.house-mark{display:inline-block;margin-left:7px;padding:3px 6px;border-radius:4px;background:var(--house-bg);color:var(--house-ink);font:600 10px/1 var(--sans);letter-spacing:.1em;text-transform:uppercase;vertical-align:2px}
-.price{margin-left:auto;white-space:nowrap;font-size:15px;font-weight:600;font-variant-numeric:tabular-nums}
+.house-mark{display:inline-block;margin-left:7px;padding:3px 6px;border-radius:4px;background:var(--house-bg);color:var(--house-ink);font:600 12px/1 var(--sans);letter-spacing:.1em;text-transform:uppercase;vertical-align:2px}
+.price{margin-left:auto;white-space:nowrap;font-size:19px;font-weight:600;font-variant-numeric:tabular-nums}
 .millimes{font-weight:400;color:var(--muted)}
-.price small{font-size:11px;font-weight:500;color:var(--muted);margin-left:1px}
-.dish p{font-size:14.5px;line-height:1.7;color:var(--muted);margin-top:4px;max-width:62ch}
+.price small{font-size:14px;font-weight:500;color:var(--muted);margin-left:1px}
+.dish p{font-size:18px;line-height:1.7;color:var(--muted);margin-top:4px;max-width:62ch}
 /* Optional product photo: a small arch with the placeholder colour behind it. */
 .dish.has-photo{display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:14px;align-items:start}
 .dish.has-photo>:not(.dish-photo){grid-column:2}
 .dish-photo{grid-row:1/span 2;position:relative;overflow:hidden;width:52px;aspect-ratio:13/14;margin:3px 3px 0;background:var(--photo-color);border-radius:999px 999px 3px 3px;box-shadow:0 0 0 3px var(--paper),0 0 0 4px var(--arch-line)}
 .dish-photo img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .is-compact .dish-photo{width:40px}
-.add-item{display:grid;place-items:center;flex-shrink:0;align-self:center;width:34px;height:34px;border-radius:50%;border:1px solid var(--control-line);background:transparent;color:var(--brand);font:600 13px/1 var(--sans);font-variant-numeric:tabular-nums;position:relative}
+.add-item{display:grid;place-items:center;flex-shrink:0;align-self:center;width:42px;height:42px;border-radius:50%;border:1px solid var(--control-line);background:transparent;color:var(--gold-ink);font:600 16.5px/1 var(--sans);font-variant-numeric:tabular-nums;position:relative}
 .add-item::after{content:"";position:absolute;inset:-5px}
 .add-item.is-selected{background:var(--brand);border-color:var(--brand);color:var(--on-brand)}
 /* Categories with no descriptions become a compact price list. */
-.dish-grid.is-compact{display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));column-gap:18px}
+.dish-grid.is-compact{display:grid;grid-template-columns:repeat(auto-fill,minmax(165px,1fr));column-gap:18px}
 .is-compact .dish{padding:10px 0}
 .is-compact .dish-heading{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:2px 8px}
-.is-compact .dish h3{grid-column:1/-1;font-size:15px}
-.is-compact .price{margin-left:0;font-size:14px}
+.is-compact .dish h3{grid-column:1/-1;font-size:19px}
+.is-compact .price{margin-left:0;font-size:18px}
 .is-compact .price small{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
 .is-compact .dish-rule{display:none!important}
 .is-compact .add-item{width:32px;height:32px}
@@ -165,32 +189,32 @@ kbd{display:none;flex-shrink:0;font:12px/1 var(--sans);padding:6px;border:1px so
 .status-page{min-height:100dvh;display:grid;place-items:center}
 .menu-message h1,.menu-message h2{font-size:clamp(34px,8vw,48px);letter-spacing:-.02em}
 .menu-message p{margin-top:14px;color:var(--muted)}
-.message-action{display:inline-flex;align-items:center;gap:12px;min-height:48px;margin-top:28px;padding:12px 22px;border-radius:30px;background:var(--brand);color:var(--on-brand);font-size:15px}
+.message-action{display:inline-flex;align-items:center;gap:12px;min-height:48px;margin-top:28px;padding:12px 22px;border-radius:30px;background:var(--brand);color:var(--on-brand);font-size:18.5px}
 .empty-state{text-align:center;padding:40px 20px;background:var(--soft);border-radius:12px;margin-top:24px}
 .empty-state>svg{width:28px;height:28px;margin-bottom:20px;color:var(--muted)}
 .empty-state h2{font-size:32px}
-.empty-state p{max-width:40ch;margin:16px auto 24px;font-size:15px;color:var(--muted)}
-.empty-state button,.category-filter-empty button{display:inline-flex;align-items:center;justify-content:center;gap:16px;min-height:48px;padding:12px 20px;border-radius:30px;background:var(--brand);color:var(--on-brand);font-size:14px}
+.empty-state p{max-width:40ch;margin:16px auto 24px;font-size:18.5px;color:var(--muted)}
+.empty-state button,.category-filter-empty button{display:inline-flex;align-items:center;justify-content:center;gap:16px;min-height:48px;padding:12px 20px;border-radius:30px;background:var(--brand);color:var(--on-brand);font-size:17.5px}
 footer{max-width:var(--content-width);margin:auto;padding:30px var(--gutter) calc(30px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--line);display:grid;gap:30px}
 /* One column per phone width, settling into a row once there is space. */
 .footer-top{min-width:0;display:grid;gap:26px 34px;grid-template-columns:1fr}
 .footer-column{min-width:0;display:grid;gap:8px;align-content:start}
-.footer-column h2{font:600 11px/1.5 var(--sans);letter-spacing:.15em;text-transform:uppercase;color:var(--gold)}
+.footer-column h2{font:600 12.5px/1.5 var(--sans);letter-spacing:.15em;text-transform:uppercase;color:var(--gold-ink)}
 .footer-identity{gap:4px}
-.footer-brand{display:inline-flex;align-items:center;min-height:44px;font:500 25px/1.3 var(--serif);color:var(--gold)}
-footer p{font-size:13px;color:var(--muted)}
+.footer-brand{display:inline-flex;align-items:center;min-height:44px;font:500 27px/1.3 var(--serif);color:var(--gold-ink)}
+footer p{font-size:16.5px;color:var(--muted)}
 /* Every line in the columns reads the same, whether it links out or not. */
-.footer-column a,.footer-column p{display:flex;align-items:center;gap:10px;min-height:38px;font-size:14px;color:var(--muted)}
+.footer-column a,.footer-column p{display:flex;align-items:center;gap:10px;min-height:42px;font-size:16.5px;color:var(--muted)}
 .footer-column a{transition:color var(--motion)}
 .footer-column a:hover,.footer-column a:focus-visible{color:var(--ink)}
-.footer-column svg{width:17px;flex-shrink:0;color:var(--gold)}
+.footer-column svg{width:18px;flex-shrink:0;color:var(--gold-ink)}
 .footer-column span{min-width:0}
 /* The one thing worth asking for: an outlined chip, not a shouty button. */
-.review-link{align-self:start;padding:0 16px;border:1px solid var(--control-line);border-radius:99px;color:var(--ink)!important}
-.review-link:hover,.review-link:focus-visible{border-color:var(--gold);background:#d9bd8214}
-.back-to-top{justify-self:center;display:inline-flex;align-items:center;gap:10px;min-height:48px;padding:0 28px;border:1px solid var(--control-line);border-radius:99px;font:500 14px/1 var(--sans);letter-spacing:.04em;color:var(--ink);transition:color var(--motion),border-color var(--motion),background var(--motion)}
-.back-to-top:hover,.back-to-top:focus-visible{color:var(--gold);border-color:var(--gold);background:#d9bd8214}
-.back-to-top svg{width:16px;transition:transform var(--motion)}
+.review-link{align-self:start;padding:0 18px;border:1px solid var(--control-line);border-radius:99px;color:var(--ink)!important}
+.review-link:hover,.review-link:focus-visible{border-color:var(--gold-ink);background:var(--plate-soft)}
+.back-to-top{justify-self:center;display:inline-flex;align-items:center;gap:10px;min-height:50px;padding:0 30px;border:1px solid var(--control-line);border-radius:99px;font:500 17.5px/1 var(--sans);letter-spacing:.04em;color:var(--ink);transition:color var(--motion),border-color var(--motion),background var(--motion)}
+.back-to-top:hover,.back-to-top:focus-visible{color:var(--gold-ink);border-color:var(--gold-ink);background:var(--plate-soft)}
+.back-to-top svg{width:17px;transition:transform var(--motion)}
 .back-to-top:hover svg{transform:translateY(-2px)}
 
 /* Ma sélection */
@@ -198,9 +222,9 @@ footer p{font-size:13px;color:var(--muted)}
 .selection-bar{position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:40;max-width:520px;margin-inline:auto}
 .selection-bar button{display:flex;align-items:center;gap:14px;width:100%;min-height:58px;padding:8px 18px;border-radius:16px;background:var(--brand);color:var(--on-brand);text-align:left;box-shadow:0 10px 30px var(--shadow)}
 .selection-bar button>span:first-child{flex:1;min-width:0}
-.selection-bar strong{display:block;font-weight:600;font-size:15px;line-height:1.3}
-.selection-bar small{font-size:13px;opacity:.85}
-.selection-total{font-size:17px;font-weight:600;font-variant-numeric:tabular-nums}
+.selection-bar strong{display:block;font-weight:600;font-size:18.5px;line-height:1.3}
+.selection-bar small{font-size:16.5px;opacity:.85}
+.selection-total{font-size:21px;font-weight:600;font-variant-numeric:tabular-nums}
 .selection-bar .millimes,.selection-bar .selection-total small{color:inherit;opacity:.75}
 .selection-bar svg{width:18px}
 dialog{color:var(--ink);background:var(--paper);border:0;padding:0;overscroll-behavior:contain}
@@ -209,20 +233,20 @@ body:has(dialog[open]){overflow:hidden}
 .sheet{width:100%;max-width:560px;max-height:min(80dvh,720px);margin:auto auto 0;border-radius:20px 20px 0 0;overflow:auto;background:var(--sheet);box-shadow:0 -20px 60px var(--shadow)}
 .sheet .dialog-heading{padding:22px 20px 12px;background:var(--sheet)}
 .sheet h2{font-size:32px;letter-spacing:-.02em}
-.sheet-hint{font-size:14px;color:var(--muted);margin-top:6px}
+.sheet-hint{font-size:17.5px;color:var(--muted);margin-top:6px}
 .selection-lines{padding:0 20px}
 .selection-lines li{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:6px 12px;padding:12px 0;border-bottom:1px solid var(--sheet-line)}
 .selection-name{grid-column:1/-1;min-width:0}
-.selection-name strong{display:block;font-weight:500;font-size:15px}
-.selection-name small{font-size:13px;color:var(--muted)}
+.selection-name strong{display:block;font-weight:500;font-size:18.5px}
+.selection-name small{font-size:16.5px;color:var(--muted)}
 .stepper{display:flex;align-items:center;gap:6px}
 .stepper button{display:grid;place-items:center;width:40px;height:40px;border-radius:50%;border:1px solid var(--control-line);background:transparent;color:var(--ink)}
 .stepper span{min-width:28px;text-align:center;font-weight:600;font-variant-numeric:tabular-nums}
 .selection-lines .price{margin:0}
 .selection-summary{position:sticky;bottom:0;background:var(--sheet);border-top:1px solid var(--sheet-line);padding:14px 20px calc(18px + env(safe-area-inset-bottom,0px));display:grid;gap:4px}
-.selection-summary p{display:flex;justify-content:space-between;align-items:baseline;font-size:15px}
-.selection-summary strong{font-size:22px;font-weight:600;font-variant-numeric:tabular-nums}
-.text-button{justify-self:start;min-height:44px;background:transparent;padding:0;font-size:14px;color:var(--muted);text-decoration:underline;text-underline-offset:4px}
+.selection-summary p{display:flex;justify-content:space-between;align-items:baseline;font-size:18.5px}
+.selection-summary strong{font-size:26px;font-weight:600;font-variant-numeric:tabular-nums}
+.text-button{justify-self:start;min-height:44px;background:transparent;padding:0;font-size:17.5px;color:var(--muted);text-decoration:underline;text-underline-offset:4px}
 .text-button[data-confirm="yes"]{color:var(--ink);font-weight:600}
 
 /* Category dialog */
@@ -237,22 +261,51 @@ body:has(dialog[open]){overflow:hidden}
 .dialog-categories{padding:0 14px 20px}
 .dialog-categories>a:first-child{margin:0 8px 8px;border:1px solid var(--control-line);border-radius:8px}
 .dialog-categories .nav-group{padding:0 8px}
-.dialog-categories a{font-size:15px;min-height:48px;scroll-margin-top:140px}
+.dialog-categories a{font-size:18.5px;min-height:56px;scroll-margin-top:140px}
 .dialog-categories a:not([aria-current]){border-bottom:1px solid var(--line);border-radius:0}
 .dialog-categories .nav-group-label{padding-top:22px}
-.category-filter-empty{padding:8px 22px 28px;text-align:center;font-size:15px}
+.category-filter-empty{padding:8px 22px 28px;text-align:center;font-size:18.5px}
 .category-filter-empty button{margin-top:16px}
+
+/* Restaurant: the wall and the paper.
+   The lattice is a still wall behind the whole page, printed faint enough to
+   read as texture and never as noise under the carte — seven levels of cream,
+   about what the paper's own grain does. A phone has no margin to show a
+   pattern in, so there the wall simply runs edge to edge; once the layout has
+   margins to spare the carte lifts onto its own sheet and the wall stays out
+   at the edges. The band is where the lattice is allowed to be seen. */
+body[data-menu="restaurant"]::before{
+  content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
+  background:var(--motif) repeat 50% 0/var(--motif-size) var(--motif-size);opacity:.5;
+}
+/* The sticky toolbar rides over the carte, so it is the one opaque plate. */
+body[data-menu="restaurant"] .menu-tools{background:var(--surface)}
+/* Placeholders are mixed harder, or the arches wash out into the cream. */
+body[data-menu="restaurant"] .category-photo,
+body[data-menu="restaurant"] .dish-photo{background:color-mix(in oklab,var(--photo-color) 62%,var(--paper))!important}
+/* Gold foil on cream is only a shade apart, so what is chosen is edged in
+   bronze: the state is a line you can see, not a tint you have to trust. */
+body[data-menu="restaurant"] .chip[aria-current],
+body[data-menu="restaurant"] .category-nav a[aria-current],
+body[data-menu="restaurant"] .dialog-categories a[aria-current],
+body[data-menu="restaurant"] .add-item.is-selected,
+body[data-menu="restaurant"].search-open .search-toggle{box-shadow:inset 0 0 0 1px var(--gold-ink)}
+
+/* The band: deeper cream, left plain so the name and the arch carry it, and
+   the cover's twin gold rules closing it off. The lattice stays on the paper. */
+body[data-menu="restaurant"] .hero{position:relative;border-bottom:1px solid var(--arch-outline)}
+body[data-menu="restaurant"] .hero::after{content:"";position:absolute;left:0;right:0;bottom:3px;height:1px;background:var(--arch-line)}
 
 @media(min-width:640px){
   :root{--gutter:32px}
   .hero-inner{gap:32px;padding-block:calc(16px + env(safe-area-inset-top,0px)) 20px}
   .hero h1{font-size:54px}.so .hero h1{font-size:62px}.so .hero h1 span{font-size:24px}
   .hero-logo{width:87px;height:118px}
-  .hero-image-wrap{width:150px;padding:5px}.hero-figure{height:136px}
-  .section-title h2{font-size:40px}
+  .hero-image-wrap{width:150px;padding:5px}
+  .section-title h2{font-size:48px}
   .category-photo{width:200px}
-  .dish h3{font-size:16px}.dish p{font-size:15px}
-  .dish-grid.is-compact{grid-template-columns:repeat(auto-fill,minmax(200px,1fr));column-gap:28px}
+  .dish h3{font-size:20.5px}.dish p{font-size:18px}
+  .dish-grid.is-compact{grid-template-columns:repeat(auto-fill,minmax(240px,1fr));column-gap:28px}
   .dialog-categories{display:grid;grid-template-columns:1fr 1fr;align-items:start;gap:0 12px;padding:0 18px 26px}
   .dialog-categories>a:first-child{grid-column:1/-1}.dialog-heading h2{font-size:38px}.dialog-heading{padding:30px 28px 20px}
   .sheet{margin:auto;border-radius:18px;max-height:calc(100dvh - 48px)}
@@ -262,33 +315,32 @@ body:has(dialog[open]){overflow:hidden}
   :root{--gutter:40px}
   html{scroll-padding-top:calc(var(--tools-offset,84px) + 16px)}
   .hero-inner{grid-template-columns:minmax(0,1fr) auto;gap:60px;padding-block:28px}
-  .hero-meta{font-size:12px}
+  .hero-meta{font-size:15.5px}
   .hero h1{font-size:76px;letter-spacing:-.035em;line-height:.95}
   .so .hero h1{font-size:96px}.so .hero h1 span{font-size:32px;margin-top:6px}
   .hero-logo{width:108px;height:146px}
-  .hero-image-wrap{width:300px;padding:8px}
-  .hero-figure{height:190px}
+  .hero-image-wrap{width:224px;padding:8px}
   .menu-workspace{display:grid;grid-template-columns:224px minmax(0,1fr);gap:44px;padding-bottom:58px}
   .menu-sidebar,:is(.enhanced,.menu-boot) .menu-sidebar{display:block;position:sticky;top:0;align-self:start;padding-top:0}
   /* The sidebar heading matches the toolbar height so both rules line up. */
   .sidebar-heading{min-height:var(--tools-offset,85px);padding-block:0}
   .category-nav{display:block;max-height:calc(100dvh - var(--tools-offset,85px) - 8px);overflow:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:var(--control-line) transparent;padding:14px 8px 16px 0}
-  .category-nav a{font-size:14px}
+  .category-nav a{font-size:17.5px}
   .menu-tools{margin-inline:0;padding:16px 0}
   .category-rail{display:none}
   .search-tools,.search-open .search-tools{display:block;padding-top:0}
-  .search-box{min-height:52px}.search-box input{font-size:15px;padding-block:14px}kbd{display:block}
+  .search-box{min-height:58px}.search-box input{font-size:18px;padding-block:14px}kbd{display:block}
   .search-suggestions{position:absolute;left:0;right:0;top:100%;padding:12px 16px 14px;background:var(--surface);border:1px solid var(--line);border-top:0;border-radius:0 0 12px 12px;box-shadow:0 14px 30px var(--shadow)}
   .search-tools{position:relative}
   .menu-section{display:block;padding-top:28px}
-  .section-title{flex-direction:row;justify-content:space-between;gap:16px;text-align:left;margin-bottom:18px}.section-title h2{font-size:46px}
-  .section-title>span{font-size:12px;white-space:nowrap;padding:4px 10px;border:1px solid var(--line);border-radius:20px}
+  .section-title{flex-direction:row;justify-content:space-between;gap:16px;text-align:left;margin-bottom:18px}.section-title h2{font-size:54px}
+  .section-title>span{font-size:16.5px;white-space:nowrap;padding:4px 10px;border:1px solid var(--line);border-radius:20px}
   .section-note,.dish-grid{grid-column:auto}.dish-grid{margin-top:0}.section-note{margin-top:14px}
   .is-searching .category-layout{display:block}
   /* Placeholder beside the list, never taller than the list it accompanies. */
   .category-layout{display:grid;grid-template-columns:150px minmax(0,1fr);gap:32px;align-items:stretch}
   .category-visual{display:flex;flex-direction:column}
-  .category-photo{width:auto;aspect-ratio:auto;flex:1;min-height:110px;max-height:260px;margin:5px}
+  .category-photo{width:150px;margin:5px;align-self:start}
   .dish{padding:16px 0}.dish:first-child{padding-top:2px}
   .dish-rule{display:block;min-width:12px;flex:1;border-bottom:1px dotted var(--control-line);opacity:.7;transform:translateY(-4px)}
   .dish h3{max-width:70%}.price{margin-left:0}
@@ -299,15 +351,20 @@ body:has(dialog[open]){overflow:hidden}
   footer{padding-block:34px}.footer-brand{font-size:28px}
   .footer-top{grid-template-columns:1.3fr 1fr 1fr 1fr;align-items:start}
   .selection-bar{left:auto;right:32px;bottom:24px;width:380px}
+  /* Room enough for the wall to show around it: the carte lifts onto a sheet
+     of blanc sale, the lattice keeps the margins, the band and the footer. */
+  body[data-menu="restaurant"] .menu-workspace,
+  body[data-menu="restaurant"] .menu-message{background:var(--sheet-paper);border-inline:1px solid var(--line);border-radius:0 0 14px 14px;box-shadow:0 24px 50px -36px var(--shadow)}
+  body[data-menu="restaurant"] footer{border-top:0;padding-top:38px}
 }
 @media(max-width:359px){
   :root{--gutter:16px}
-  .hero-image-wrap{width:88px}.hero-figure{height:96px}.hero h1{font-size:30px}
-  .dish h3{font-size:15px}.price{font-size:14px}
-  .dish-grid.is-compact{grid-template-columns:1fr 1fr;column-gap:12px}
+  .hero-image-wrap{width:88px}.hero h1{font-size:30px}
+  .dish h3{font-size:19px}.price{font-size:18px}
+  .dish-grid.is-compact{grid-template-columns:1fr;column-gap:12px}
 }
 @media(max-height:500px) and (max-width:1023px){
-  .hero-figure{height:84px}.hero-image-wrap{width:84px}.hero-inner{padding-block:8px}
+  .hero-image-wrap{width:84px}.hero-inner{padding-block:8px}
   .dialog-heading h2{font-size:26px}.dialog-heading{padding-block:14px}
 }
 /* Motion stays on visual children: sticky containers and reading order are stable. */
@@ -338,7 +395,7 @@ body:has(dialog[open]){overflow:hidden}
     .category-nav a:hover span,.dialog-categories a:hover span{transform:translateX(3px)}
     .back-to-top:hover svg{transform:translateY(-5px)}
     .dialog-heading button:hover{transform:rotate(90deg)}
-    .add-item:hover{border-color:var(--brand)}
+    .add-item:hover{border-color:var(--gold-ink)}
     .chip:hover:not([aria-current]){border-color:var(--control-line)}
   }
   @keyframes title-enter{from{transform:translateY(12px);opacity:.5}to{transform:translateY(0);opacity:1}}
@@ -363,4 +420,15 @@ body:has(dialog[open]){overflow:hidden}
   .hero{background:white;color:black}.hero-inner{display:block;padding:0}.hero h1,.so .hero h1{font:500 32px/1.2 var(--serif);color:black}.hero h1 span{display:inline;font:inherit;color:black}
   .menu-workspace,.category-layout{display:block;padding:0}.menu-section[hidden],.dish[hidden]{display:block!important}.category-photo,.dish-photo{display:none}
   .dish.has-photo{display:block}.dish{break-inside:avoid}.section-title{break-after:avoid}body{background:white;color:black;padding:0}
+  /* No wall, no sheet, no lattice on paper: ink and white only. */
+  body[data-menu="restaurant"]::before,body[data-menu="restaurant"] .hero::after{display:none!important}
+  body[data-menu="restaurant"] .hero,
+  body[data-menu="restaurant"] .menu-workspace,
+  body[data-menu="restaurant"] .menu-message{background:white!important;border:0!important;box-shadow:none!important;border-radius:0!important}
+}
+/* When the reader asks for more contrast the texture is the first thing to go. */
+@media(prefers-contrast:more){
+  body[data-menu="restaurant"]{--muted:#3f4a41;--line:#b6ab94;--control-line:#7d715c;--gold-ink:#5f4718;--sheet-paper:#f7f2e8}
+  body[data-menu="restaurant"]::before{display:none}
+  body[data-menu="restaurant"] .hero{background-image:none}
 }

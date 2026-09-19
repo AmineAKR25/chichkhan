@@ -5,8 +5,13 @@
 @font-face{font-family:"DM Sans";font-style:normal;font-weight:400 700;font-display:swap;src:url('/assets/fonts/body.woff2') format('woff2')}
 :root{
   color-scheme:light dark;
-  --paper:#f7f8f5;--surface:#fff;--surface-2:#fafbf8;--ink:#203b33;--muted:#556660;--line:#dce2dc;--control-line:#9aa9a0;--soft:#e9eee7;
-  --brand:#16483c;--brand-hover:#0f372e;--on-brand:#fffdf5;--hero:#16483c;--on-hero:#fffdf5;--gold:#d9bd82;--brass:#b8914a;--focus:#976622;
+  --paper:#f7f8f5;--surface:#fff;--surface-2:#fafbf8;--ink:#203b33;--muted:#556660;--line:#dce2dc;--control-line:#7f9086;--soft:#e9eee7;
+  --brand:#143a38;--brand-hover:#0d2b29;--on-brand:#fffdf5;--hero:#10322f;--on-hero:#ecdfc0;--gold:#d9bd82;--brass:#b8914a;--focus:#8a5d1c;
+  /* The band surfaces. A band is dark here, so these are washes of its own
+     ink; the Restaurant re-cuts every one of them for a cream band. */
+  --on-hero-soft:#ecdfc0cc;--band-line:#ecdfc021;--band-btn-line:#ecdfc06b;--band-back-line:#ecdfc078;
+  --band-switch-line:#ecdfc06b;--band-switch-bg:#0000002e;--band-switch-ink:#1b1a12;--band-hover:#ecdfc01a;
+  --band-plate:#ecdfc01c;--frame-line:#d9bd8270;--logo-plate:#060709;--logo-ring:#d9bd8255;
   --house-bg:#f1e6cc;--house-ink:#6b4d14;--shadow:#142f2414;--shadow-strong:#142f242e;--arch-line:#b8914a80;
   --danger:#a3352c;--danger-hover:#86281f;--on-danger:#fff;--danger-soft:#fbebe8;--danger-line:#e2b3ac;
   --warning:#7a5410;--warning-soft:#f8efd9;--warning-line:#e3cc92;
@@ -16,7 +21,48 @@
   --gutter:16px;--motion:180ms;
   --chevron:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23889890' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
 }
-.venue-restaurant{--ink:#183d4c;--brand:#153c4b;--brand-hover:#0d2d3a;--hero:#153c4b;--muted:#536772;--line:#d8e0e1;--control-line:#94a6ad;--soft:#e7edef;--info-soft:#e8eff2;--info-line:#c3d3da}
+/* The two venues wear their own printed colours here, exactly as the public
+   menus do, and they keep them whatever the computer's light or dark setting
+   says. Each block therefore restates every token the night shell overrides —
+   leave one out and that one leaks back in after dark. */
+
+/* Cafe: the cover itself. Bottle green suede, gold foil, cream ink. */
+.venue-cafe{
+  color-scheme:dark;
+  --paper:#143a38;--surface:#18443f;--surface-2:#16403b;--ink:#ecdfc0;--muted:#b6ac8e;--line:#2a4a45;--control-line:#83a09a;--soft:#1b4842;
+  --brand:#d9bd82;--brand-hover:#e8cf98;--on-brand:#12302c;--hero:#10322f;--on-hero:#ecdfc0;--gold:#d9bd82;--focus:#e0b867;
+  --house-bg:#3a3020;--house-ink:#ecd49c;--shadow:#00000047;--shadow-strong:#00000080;--arch-line:#d9bd8266;
+  --danger:#f2a095;--danger-hover:#f6b3aa;--on-danger:#2a0d0a;--danger-soft:#3b1d19;--danger-line:#7d3d33;
+  --warning:#f0c979;--warning-soft:#37301c;--warning-line:#735d29;
+  --success:#95d6b3;--success-soft:#17392c;--success-line:#367557;
+  --info-soft:#1a4741;--info-line:#2f5b54;
+  --on-hero-soft:#ecdfc0cc;--band-line:#ecdfc021;--band-btn-line:#ecdfc06b;--band-back-line:#ecdfc078;
+  --band-switch-line:#ecdfc06b;--band-switch-bg:#0000002e;--band-switch-ink:#12302c;--band-hover:#ecdfc01a;
+  --band-plate:#ecdfc01c;--frame-line:#d9bd8270;--logo-plate:#0c2723;--logo-ring:#d9bd8255;
+  --chevron:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23b6ac8e' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+}
+/* Restaurant: the other side of the cover. Blanc sale paper, a band cut in the
+   deeper cream, bronze wherever the Cafe has gold. Its band is light, so every
+   band surface is a wash of ink instead of a wash of cream. */
+.venue-restaurant{
+  color-scheme:light;
+  --paper:#f2ece0;--surface:#fbf7ef;--surface-2:#f6f0e3;--ink:#16302b;--muted:#505950;--line:#ddd4c2;--control-line:#7d7159;--soft:#eae2d2;
+  --brand:#6c511b;--brand-hover:#553f14;--on-brand:#fffdf5;--hero:#e5d8bf;--on-hero:#16302b;--gold:#6c511b;--focus:#6c511b;
+  --house-bg:#10322f;--house-ink:#e2c68f;--shadow:#3a2f1c1a;--shadow-strong:#3a2f1c33;--arch-line:#7e5f2559;
+  --danger:#963028;--danger-hover:#7a2621;--on-danger:#fffdf5;--danger-soft:#f7e8e3;--danger-line:#d7a99f;
+  --warning:#6f4c0e;--warning-soft:#f6edd8;--warning-line:#d8c088;
+  --success:#1b5c40;--success-soft:#e6efe6;--success-line:#a2c4ae;
+  --info-soft:#f3ecdd;--info-line:#ded2b8;
+  --on-hero-soft:#16302bc4;--band-line:#16302b26;--band-btn-line:#16302b8a;--band-back-line:#16302b99;
+  --band-switch-line:#16302b8a;--band-switch-bg:#16302b0f;--band-switch-ink:#fffdf5;--band-hover:#16302b14;
+  --band-plate:#16302b14;--frame-line:#6c511b8c;--logo-plate:#16302b;--logo-ring:#6c511b66;
+  --chevron:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237d7159' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+}
+/* Placeholder colours are mixed into each venue's own paper, and each venue's
+   band needs its edge drawn, whatever the shell is doing. */
+.venue-cafe .arch{background:color-mix(in oklab,var(--photo-color) 30%,var(--paper))!important}
+.venue-restaurant .arch{background:color-mix(in oklab,var(--photo-color) 62%,var(--paper))!important}
+:is(.venue-cafe,.venue-restaurant) :is(.venue-card-band,.editor-head){border-bottom:1px solid var(--line)}
 @media(prefers-color-scheme:dark){
   :root{
     --paper:#0e1815;--surface:#15221e;--surface-2:#12201b;--ink:#e9ece4;--muted:#a3b3ab;--line:#26372f;--control-line:#4d6158;--soft:#1b2b25;
@@ -27,9 +73,8 @@
     --success:#8fd3ae;--success-soft:#15301f;--success-line:#2f6b4c;
     --info-soft:#17261f;--info-line:#2c4238;
   }
-  .venue-restaurant{--ink:#e7ecee;--paper:#0d161b;--surface:#142129;--surface-2:#111c23;--hero:#0a141a;--muted:#a2b2b9;--line:#24343c;--control-line:#4a5d66;--soft:#192a32;--brand:#d9bd82;--brand-hover:#e8cf98;--on-brand:#0d161b;--info-soft:#15232a;--info-line:#2a3f49}
   .arch{background:color-mix(in oklab,var(--photo-color) 30%,var(--paper))!important}
-  .venue-card-band,.editor-head,.admin-bar{border-bottom:1px solid var(--line)}
+  .admin-bar{border-bottom:1px solid var(--line)}
 }
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
@@ -63,8 +108,8 @@ code{font:14px/1.4 ui-monospace,SFMono-Regular,Consolas,monospace;background:var
 .btn-danger:hover{background:var(--danger-hover);border-color:var(--danger-hover)}
 .btn-danger-outline{background:var(--surface);border-color:var(--danger-line);color:var(--danger)}
 .btn-danger-outline:hover{background:var(--danger-soft)}
-.btn-on-dark{color:var(--on-hero);border-color:#fffdf54d}
-.btn-on-dark:hover{background:#fffdf51a}
+.btn-on-dark{color:var(--on-hero);border-color:var(--band-btn-line)}
+.btn-on-dark:hover{background:var(--band-hover)}
 .btn-small{min-height:44px;padding:8px 15px;font-size:15px}
 .btn-large{min-height:54px;padding:12px 26px;font-size:17px}
 .btn-block{width:100%}
@@ -114,10 +159,10 @@ input::placeholder,textarea::placeholder{color:var(--muted);opacity:1}
 .arch img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .arch-ring{box-shadow:0 0 0 4px var(--surface),0 0 0 5px var(--arch-line)}
 .arch-frame{position:relative;isolation:isolate;padding:5px;flex-shrink:0}
-.arch-frame::before{content:"";position:absolute;inset:0;border:1px solid #d9bd8270;border-radius:999px 999px 6px 6px;z-index:-1}
-.arch-logo{border-radius:50%;background:#060709;box-shadow:0 0 0 1px #d9bd8255}
+.arch-frame::before{content:"";position:absolute;inset:0;border:1px solid var(--frame-line);border-radius:999px 999px 6px 6px;z-index:-1}
+.arch-logo{border-radius:50%;background:var(--logo-plate);box-shadow:0 0 0 1px var(--logo-ring)}
 .arch-logo img{object-fit:contain;padding:10%}
-.brand-logo{display:grid;place-items:center;width:var(--size,40px);height:var(--size,40px);border-radius:50%;background:#060709;box-shadow:0 0 0 1px #d9bd8266;overflow:hidden;flex-shrink:0}
+.brand-logo{display:grid;place-items:center;width:var(--size,40px);height:var(--size,40px);border-radius:50%;background:var(--logo-plate);box-shadow:0 0 0 1px var(--logo-ring);overflow:hidden;flex-shrink:0}
 .brand-logo img{width:100%;height:100%;padding:12%;object-fit:contain}
 
 /* Badges and tags */
@@ -133,9 +178,9 @@ input::placeholder,textarea::placeholder{color:var(--muted);opacity:1}
 .admin-brand strong{display:block;font:500 24px/1 var(--serif);letter-spacing:-.01em}
 .admin-brand small{display:block;margin-top:3px;font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--gold)}
 .admin-bar-actions{display:flex;align-items:center;gap:8px}
-.signed-in{font-size:14px;color:#fffdf5cc}
+.signed-in{font-size:14px;color:var(--on-hero-soft)}
 .admin-bar .btn-quiet{color:var(--on-hero)}
-.admin-bar .btn-quiet:hover{background:#fffdf51a}
+.admin-bar .btn-quiet:hover{background:var(--band-hover)}
 
 /* Overview */
 .dashboard>.activity{margin-top:34px}
@@ -144,12 +189,12 @@ input::placeholder,textarea::placeholder{color:var(--muted);opacity:1}
 .page-intro p:last-child{margin-top:10px;max-width:62ch;color:var(--muted);font-size:17px}
 .dashboard>.form-alert{margin-top:24px}
 .venue-cards{display:grid;gap:22px;margin-top:28px}
-.venue-card{display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--line);border-radius:22px;overflow:hidden;box-shadow:0 12px 34px var(--shadow)}
+.venue-card{display:flex;flex-direction:column;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:22px;overflow:hidden;box-shadow:0 12px 34px var(--shadow)}
 .venue-card-band{display:flex;align-items:center;justify-content:space-between;gap:18px;min-height:176px;padding:22px 22px 22px 26px;background:var(--hero);color:var(--on-hero)}
 .venue-card-band .eyebrow{color:var(--gold)}
 .venue-card h2{margin-top:8px;font-size:clamp(38px,9vw,52px);line-height:.95;letter-spacing:-.025em}
 .venue-card h2 span{display:block;margin-top:6px;color:var(--gold);font-size:.52em;font-style:italic;letter-spacing:0}
-.arch-hero{width:104px;height:124px;background:#fffdf51c}
+.arch-hero{width:104px;height:124px;background:var(--band-plate)}
 .venue-card-body{display:grid;gap:20px;flex:1;padding:22px 24px 24px}
 .venue-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
 .venue-stats div{padding:12px 14px;border:1px solid var(--line);border-radius:14px;background:var(--surface-2)}
@@ -190,29 +235,29 @@ input::placeholder,textarea::placeholder{color:var(--muted);opacity:1}
 
 /* Venue editor: a thin bar, then the top of the public page, changed in place */
 .editor-head{background:var(--hero);color:var(--on-hero)}
-.editor-top{max-width:1440px;margin:auto;display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;padding:10px var(--gutter);border-bottom:1px solid #fffdf521}
-.back-link{display:inline-flex;align-items:center;gap:8px;min-height:48px;padding:6px 18px 6px 14px;border:1px solid #fffdf55c;border-radius:99px;font-size:16px;text-decoration:none}
-.back-link:hover{background:#fffdf51a}
-.venue-switch{display:inline-flex;padding:3px;border:1px solid #fffdf53d;border-radius:99px;background:#0000002e}
+.editor-top{max-width:1440px;margin:auto;display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;padding:10px var(--gutter);border-bottom:1px solid var(--band-line)}
+.back-link{display:inline-flex;align-items:center;gap:8px;min-height:48px;padding:6px 18px 6px 14px;border:1px solid var(--band-back-line);border-radius:99px;font-size:16px;text-decoration:none}
+.back-link:hover{background:var(--band-hover)}
+.venue-switch{display:inline-flex;padding:3px;border:1px solid var(--band-switch-line);border-radius:99px;background:var(--band-switch-bg)}
 .venue-switch a{display:inline-flex;align-items:center;min-height:46px;padding:8px 20px;border-radius:99px;font-size:16px;text-decoration:none}
-.venue-switch a:hover:not([aria-current]){background:#fffdf51a}
-.venue-switch a[aria-current]{background:var(--gold);color:#1b1a12;font-weight:600}
+.venue-switch a:hover:not([aria-current]){background:var(--band-hover)}
+.venue-switch a[aria-current]{background:var(--gold);color:var(--band-switch-ink);font-weight:600}
 .editor-header-actions{display:flex;flex-wrap:wrap;gap:8px;margin-left:auto}
 .venue-band{background:var(--hero);color:var(--on-hero)}
 .venue-band-inner{max-width:1440px;margin:auto;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:18px 24px;align-items:center;padding:20px var(--gutter) 24px}
 .band-copy{min-width:0}
-.band-brand{display:flex;align-items:center;gap:12px;min-height:44px;font:600 12px/1.3 var(--sans);letter-spacing:.14em;text-transform:uppercase;color:#fffdf5d9}
-.band-logo{display:block;position:relative;flex-shrink:0;width:52px;height:52px;border-radius:50%;overflow:hidden;background:#060709;box-shadow:0 0 0 1px #d9bd8255}
+.band-brand{display:flex;align-items:center;gap:12px;min-height:44px;font:600 12px/1.3 var(--sans);letter-spacing:.14em;text-transform:uppercase;color:var(--on-hero-soft)}
+.band-logo{display:block;position:relative;flex-shrink:0;width:52px;height:52px;border-radius:50%;overflow:hidden;background:var(--logo-plate);box-shadow:0 0 0 1px var(--logo-ring)}
 .band-logo img{position:absolute;inset:0;width:100%;height:100%;padding:5px;object-fit:contain}
 .band-title,.band-copy h1{margin-top:6px;font:500 clamp(40px,9vw,64px)/.95 var(--serif);letter-spacing:-.03em;overflow-wrap:anywhere}
 .band-title span,.band-copy h1 span{display:block;margin-top:6px;color:var(--gold);font-size:.5em;font-style:italic;letter-spacing:0}
 .band-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
 .band-photo{display:grid;justify-items:center;gap:12px}
 .band-frame{display:block;position:relative;isolation:isolate;padding:5px}
-.band-frame::before{content:"";position:absolute;inset:0;border:1px solid #d9bd8270;border-radius:999px 999px 6px 6px;z-index:-1}
-.band-arch{display:block;position:relative;overflow:hidden;width:112px;height:124px;border-radius:999px 999px 3px 3px;background:#fffdf51c}
+.band-frame::before{content:"";position:absolute;inset:0;border:1px solid var(--frame-line);border-radius:999px 999px 6px 6px;z-index:-1}
+.band-arch{display:block;position:relative;overflow:hidden;width:112px;height:124px;border-radius:999px 999px 3px 3px;background:var(--band-plate)}
 .band-arch img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
-.publish-note{display:flex;align-items:center;gap:8px;max-width:1440px;margin:auto;padding:10px var(--gutter);border-top:1px solid #fffdf521;font-size:15px;color:#fffdf5d1}
+.publish-note{display:flex;align-items:center;gap:8px;max-width:1440px;margin:auto;padding:10px var(--gutter);border-top:1px solid var(--band-line);font-size:15px;color:var(--on-hero-soft)}
 .band-preview{border-radius:14px;overflow:hidden}
 .band-preview .venue-band-inner{padding:18px;gap:14px}
 .band-preview .band-title{font-size:34px}
@@ -361,6 +406,45 @@ body:has(dialog[open]){overflow:hidden}
 .choice.is-danger:has(input:checked){border-color:var(--danger);box-shadow:0 0 0 1px var(--danger)}
 .choice .check{padding:2px 0}
 
+/* The photo in the window is itself the button that reframes it: click the
+   picture, not a control beside it. The label only appears on hover or focus
+   so it never sits on top of the photo while you are judging it. */
+.photo-recrop{display:grid;justify-items:center;gap:10px;padding:6px;border:0;border-radius:16px;background:transparent;color:inherit;cursor:zoom-in}
+.photo-recrop:hover{background:var(--soft)}
+.photo-recrop:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+.photo-recrop:disabled{cursor:progress;opacity:.55}
+.photo-recrop-hint{display:inline-flex;align-items:center;gap:7px;font:600 15px/1.3 var(--sans);color:var(--brand);text-decoration:underline;text-underline-offset:4px}
+@media(hover:hover){
+  .photo-recrop-hint{opacity:.72;transition:opacity var(--motion)}
+  .photo-recrop:hover .photo-recrop-hint,.photo-recrop:focus-visible .photo-recrop-hint{opacity:1}
+}
+
+/* The cropper: the window IS the frame the photo lands in, cut to the venue's
+   own shape, so nothing has to be imagined. The photo moves under it. */
+.crop-window{width:min(560px,calc(100vw - 24px))}
+.crop-stage{display:grid;place-items:center;padding:8px 0 2px}
+.crop-view{
+  position:relative;overflow:hidden;width:min(300px,66vw);aspect-ratio:var(--crop-aspect,1);
+  background:var(--soft);touch-action:none;cursor:grab;
+  box-shadow:0 0 0 1px var(--control-line),0 14px 34px -18px var(--shadow-strong);
+}
+.crop-view:active{cursor:grabbing}
+.crop-view:focus-visible{outline:3px solid var(--focus);outline-offset:4px}
+/* max-width:none so the photo is free to be larger than the frame. */
+.crop-view img{position:absolute;top:0;left:0;max-width:none;transform-origin:0 0;user-select:none;-webkit-user-drag:none}
+/* The logo is shown whole on the menu, so its frame is a plain square. */
+.crop-square{border-radius:10px}
+.crop-arch{border-radius:999px 999px 6px 6px}
+.crop-controls{display:flex;align-items:center;gap:12px;margin-top:16px}
+.crop-step{min-width:52px;min-height:48px;padding:0;font-size:22px;line-height:1}
+.crop-range{flex:1;min-width:0;height:44px;accent-color:var(--brand);cursor:pointer}
+.crop-note{font-size:15px;color:var(--muted)}
+.crop-window .confirm-foot [data-reset]{margin-right:auto}
+@media(max-width:420px){
+  .crop-window .confirm-foot{flex-wrap:wrap}
+  .crop-window .confirm-foot [data-reset]{order:1;width:100%;margin-right:0}
+}
+
 /* The photo window: one simple place to change any photo */
 .photo-window{width:min(560px,calc(100vw - 24px))}
 .photo-window .confirm-body{justify-items:center;text-align:center}
@@ -368,7 +452,7 @@ body:has(dialog[open]){overflow:hidden}
 .photo-window h2{font-size:34px}
 .photo-stage{display:grid;place-items:center;padding:12px 0 4px}
 .stage-arch{width:190px;aspect-ratio:13/14}
-.stage-logo{display:block;position:relative;width:150px;height:150px;border-radius:50%;overflow:hidden;background:#060709;box-shadow:0 0 0 1px #d9bd8255}
+.stage-logo{display:block;position:relative;width:150px;height:150px;border-radius:50%;overflow:hidden;background:var(--logo-plate);box-shadow:0 0 0 1px var(--logo-ring)}
 .stage-logo img{position:absolute;inset:0;width:100%;height:100%;padding:12px;object-fit:contain}
 .stage-hero{display:block;padding:18px 30px;border-radius:16px;background:var(--hero)}
 .stage-hero .band-arch{width:230px;height:190px}
@@ -386,7 +470,7 @@ body:has(dialog[open]){overflow:hidden}
 .photo-inline .stage-arch{width:84px}
 
 /* Preview: the public menu's product row */
-.menu-preview{padding:4px 18px;border:1px solid var(--line);border-radius:14px;background:var(--paper)}
+.menu-preview{padding:4px 18px;border:1px solid var(--line);border-radius:14px;background:var(--paper);color:var(--ink)}
 .menu-preview .dish{padding:14px 0}
 .menu-preview .dish.has-photo{display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:14px;align-items:start}
 .menu-preview .dish.has-photo>:not(.dish-photo){grid-column:2}

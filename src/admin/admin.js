@@ -4,7 +4,7 @@
 // edits wait for "Save changes", and every deletion is confirmed first.
 const version = new URL(import.meta.url).search;
 const {
-  IMAGE_TYPES, LIMITS, MAX_SOURCE_BYTES, MAX_UPLOAD_BYTES, PHOTO_POSITIONS,
+  IMAGE_TYPES, LIMITS, MAX_SOURCE_BYTES, MAX_UPLOAD_BYTES, PHOTO_SHAPES,
   formatPrice, hasErrors, parsePrice, priceInputValue, slugify,
   validateCategory, validateGroup, validateProduct, validateVenueDetails,
 } = await import(`./shared.js${version}`);
@@ -26,6 +26,8 @@ const plural = (n, one, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 const quoted = (name) => `“${name}”`;
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const megabytes = (bytes) => `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+// The kept original only has to be good enough to crop from again.
+const ORIGINAL_MAX_SIDE = 1800;
 let uid = 0;
 const nextId = (prefix) => `${prefix}-${++uid}`;
 const paths = {
@@ -36,6 +38,7 @@ const paths = {
   info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5m0-8v.01"/>',
   up: '<path d="M12 19V5m-6 6 6-6 6 6"/>',
   down: '<path d="M12 5v14m-6-6 6 6 6-6"/>',
+  crop: '<path d="M6.5 2v15.5H22"/><path d="M2 6.5h15.5V22"/>',
 };
 const icon = (name, size = 18) => `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${paths[name]}</svg>`;
 const fragment = (html) => document.createRange().createContextualFragment(html);
@@ -487,9 +490,8 @@ function renderStructure() {
 
 // The top of the public page, drawn in the venue's colours. In the editor
 // each part has its own button; in the "Name and text" panel it is a preview.
-const focusOf = (value) => Math.min(100, Math.max(0, Number(value) || 0));
 function bandHtml(details, { editable = true } = {}) {
-  const { title, subtitle, eyebrow, logoImageUrl, heroImageUrl, heroImageAlt, heroFocusY } = details;
+  const { title, subtitle, eyebrow, logoImageUrl, heroImageUrl, heroImageAlt } = details;
   const heading = editable ? 'h1' : 'p';
   return `<div class="venue-band-inner">
     <div class="band-copy">
@@ -497,7 +499,7 @@ function bandHtml(details, { editable = true } = {}) {
       <${heading} class="band-title" lang="fr">${esc(title || 'Nom affiché sur la page')}${subtitle ? ` <span>${esc(subtitle)}</span>` : ''}</${heading}>
       ${editable ? `<div class="band-actions"><button type="button" class="btn btn-on-dark" data-action="photo" data-target="venue" data-slot="logo" data-focus-key="venue-logo">Changer le logo</button><button type="button" class="btn btn-on-dark" data-action="venue-text" data-focus-key="venue-text">Changer le nom et le texte</button></div>` : ''}
     </div>
-    <div class="band-photo"><span class="band-frame"><span class="band-arch${heroImageUrl ? ' has-image' : ''}" data-image>${heroImageUrl ? `<img src="${esc(heroImageUrl)}" alt="${esc(heroImageAlt)}" style="object-position:50% ${focusOf(heroFocusY)}%">` : ''}</span></span>${editable ? '<button type="button" class="btn btn-on-dark" data-action="photo" data-target="venue" data-slot="hero" data-focus-key="venue-hero">Changer la photo</button>' : ''}</div>
+    <div class="band-photo"><span class="band-frame"><span class="band-arch${heroImageUrl ? ' has-image' : ''}" data-image>${heroImageUrl ? `<img src="${esc(heroImageUrl)}" alt="${esc(heroImageAlt)}">` : ''}</span></span>${editable ? '<button type="button" class="btn btn-on-dark" data-action="photo" data-target="venue" data-slot="hero" data-focus-key="venue-hero">Changer la photo</button>' : ''}</div>
   </div>`;
 }
 function renderVenueHeader() {
@@ -1128,6 +1130,230 @@ async function preparePhoto(file) {
 }
 
 // ---------------------------------------------------------------------------
+// The cropper. A photo is almost never the shape of the frame it lands in, so
+// before anything is sent the administrator decides what the frame keeps:
+// drag to move, pinch, scroll or the slider to zoom. The window is the frame
+// itself, at the venue's own shape, so there is nothing to imagine — what is
+// inside the window is exactly what the menu shows. Only the cropped part is
+// uploaded, which also keeps the files small.
+
+const cropSupported = () => typeof createImageBitmap === 'function' && typeof document.createElement('canvas').toBlob === 'function';
+
+// Smallest scale that still covers the window, so no empty corner can appear.
+const coverScale = (bitmap, w, h) => Math.max(w / bitmap.width, h / bitmap.height);
+
+async function encodeCrop(canvas, limit) {
+  const encode = (type, quality) => new Promise((resolve) => canvas.toBlob(resolve, type, quality));
+  for (const quality of [0.86, 0.78, 0.68, 0.58]) {
+    const webp = await encode('image/webp', quality);
+    if (webp?.type === 'image/webp' && webp.size <= limit) return webp;
+  }
+  for (const quality of [0.86, 0.74, 0.62]) {
+    const jpeg = await encode('image/jpeg', quality);
+    if (jpeg?.type === 'image/jpeg' && jpeg.size <= limit) return jpeg;
+  }
+  return null;
+}
+
+// Resolves with the cropped photo, or null if the administrator backs out.
+function openCropper(file, shape) {
+  const spec = PHOTO_SHAPES[shape] ?? PHOTO_SHAPES.arch;
+  return new Promise((resolve) => {
+    let bitmap = null;
+    let objectUrl = null;
+    let dialog = null;
+    let settled = false;
+    const finish = (value) => {
+      if (settled) return;
+      settled = true;
+      bitmap?.close?.();
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+      dialog?.close();
+      resolve(value);
+    };
+
+    createImageBitmap(file).then((decoded) => {
+      if (settled) return decoded.close?.();
+      bitmap = decoded;
+      objectUrl = URL.createObjectURL(file);
+      build();
+    }).catch(() => finish(file)); // Undecodable here: let the server judge it.
+
+    function build() {
+      const uid = nextId('crop');
+      dialog = mountDialog(`<dialog class="confirm crop-window" aria-labelledby="${uid}-title">
+        <div class="confirm-body">
+          <p class="eyebrow">Menu ${esc(venueLabel)}</p>
+          <h2 id="${uid}-title">Cadrer la photo</h2>
+          <p class="hint" id="${uid}-help">Glissez la photo pour la déplacer, et agrandissez-la avec le curseur, la molette ou deux doigts. Au clavier : les flèches déplacent, + et − agrandissent.</p>
+          <div class="crop-stage">
+            <div class="crop-view crop-${spec.mask}" style="--crop-aspect:${spec.aspect}" tabindex="0" role="group" aria-label="Cadrage de la photo" aria-describedby="${uid}-help" data-view>
+              <img src="${esc(objectUrl)}" alt="" draggable="false" data-img>
+            </div>
+          </div>
+          <div class="crop-controls">
+            <button type="button" class="btn btn-secondary crop-step" data-zoom="out" aria-label="Réduire la photo">−</button>
+            <label class="sr-only" for="${uid}-zoom">Agrandissement</label>
+            <input id="${uid}-zoom" class="crop-range" type="range" min="0" max="1000" value="0" data-range>
+            <button type="button" class="btn btn-secondary crop-step" data-zoom="in" aria-label="Agrandir la photo">+</button>
+          </div>
+          <p class="crop-note">${esc(spec.note)}</p>
+        </div>
+        <div class="confirm-foot">
+          <button type="button" class="btn btn-quiet" data-reset>Tout recadrer</button>
+          <button type="button" class="btn btn-secondary btn-large" data-cancel>Annuler</button>
+          <button type="button" class="btn btn-primary btn-large" data-use>Utiliser cette photo</button>
+        </div>
+      </dialog>`, { onCancel: () => finish(null) });
+
+      const view = dialog.querySelector('[data-view]');
+      const img = dialog.querySelector('[data-img]');
+      const range = dialog.querySelector('[data-range]');
+      // Window size in CSS pixels, and where the photo sits inside it: `scale`
+      // plus the offset of its top-left corner from the window's.
+      let vw = 0, vh = 0, min = 1, max = 1, scale = 1, ox = 0, oy = 0;
+
+      const clamp = () => {
+        scale = Math.min(max, Math.max(min, scale));
+        ox = Math.min(0, Math.max(vw - bitmap.width * scale, ox));
+        oy = Math.min(0, Math.max(vh - bitmap.height * scale, oy));
+      };
+      const paint = () => {
+        img.style.width = `${bitmap.width}px`;
+        img.style.height = `${bitmap.height}px`;
+        img.style.transform = `translate(${ox}px, ${oy}px) scale(${scale})`;
+        const span = Math.log(max / min);
+        range.value = String(Math.round(span > 0 ? (Math.log(scale / min) / span) * 1000 : 0));
+      };
+      // Zoom about a point in the window, so what is under the cursor, the
+      // pinch or the middle of the frame stays put.
+      const zoomTo = (next, cx = vw / 2, cy = vh / 2) => {
+        const before = scale;
+        scale = Math.min(max, Math.max(min, next));
+        const k = scale / before;
+        ox = cx - (cx - ox) * k;
+        oy = cy - (cy - oy) * k;
+        clamp();
+        paint();
+      };
+      const reset = () => {
+        const box = view.getBoundingClientRect();
+        vw = box.width;
+        vh = box.height;
+        min = coverScale(bitmap, vw, vh);
+        // Never past four times the frame, and never past the photo's own
+        // pixels, so the result cannot be enlarged into mush.
+        max = Math.max(min, Math.min(min * 4, (spec.width / vw) * min * 4, Math.max(min, 1)));
+        if (max < min) max = min;
+        scale = min;
+        ox = (vw - bitmap.width * scale) / 2;
+        oy = (vh - bitmap.height * scale) / 2;
+        clamp();
+        paint();
+      };
+
+      // Pointers: one drags, two pinch.
+      const points = new Map();
+      let pinch = null;
+      view.addEventListener('pointerdown', (event) => {
+        view.setPointerCapture(event.pointerId);
+        points.set(event.pointerId, { x: event.clientX, y: event.clientY });
+        if (points.size === 2) {
+          const [a, b] = [...points.values()];
+          pinch = { distance: Math.hypot(a.x - b.x, a.y - b.y), scale };
+        }
+      });
+      view.addEventListener('pointermove', (event) => {
+        const previous = points.get(event.pointerId);
+        if (!previous) return;
+        const box = view.getBoundingClientRect();
+        points.set(event.pointerId, { x: event.clientX, y: event.clientY });
+        if (points.size >= 2 && pinch) {
+          const [a, b] = [...points.values()];
+          const distance = Math.hypot(a.x - b.x, a.y - b.y);
+          if (pinch.distance > 0) zoomTo(pinch.scale * (distance / pinch.distance), (a.x + b.x) / 2 - box.left, (a.y + b.y) / 2 - box.top);
+          return;
+        }
+        ox += event.clientX - previous.x;
+        oy += event.clientY - previous.y;
+        clamp();
+        paint();
+      });
+      const release = (event) => {
+        points.delete(event.pointerId);
+        if (points.size < 2) pinch = null;
+      };
+      view.addEventListener('pointerup', release);
+      view.addEventListener('pointercancel', release);
+      view.addEventListener('wheel', (event) => {
+        event.preventDefault();
+        const box = view.getBoundingClientRect();
+        zoomTo(scale * (event.deltaY < 0 ? 1.12 : 1 / 1.12), event.clientX - box.left, event.clientY - box.top);
+      }, { passive: false });
+      view.addEventListener('keydown', (event) => {
+        const step = event.shiftKey ? 32 : 12;
+        const moves = { ArrowLeft: [step, 0], ArrowRight: [-step, 0], ArrowUp: [0, step], ArrowDown: [0, -step] };
+        if (moves[event.key]) {
+          event.preventDefault();
+          ox += moves[event.key][0];
+          oy += moves[event.key][1];
+          clamp();
+          paint();
+        } else if (event.key === '+' || event.key === '=') {
+          event.preventDefault();
+          zoomTo(scale * 1.15);
+        } else if (event.key === '-' || event.key === '_') {
+          event.preventDefault();
+          zoomTo(scale / 1.15);
+        }
+      });
+      range.addEventListener('input', () => {
+        const span = Math.log(max / min);
+        zoomTo(span > 0 ? min * Math.exp((Number(range.value) / 1000) * span) : min);
+      });
+
+      dialog.addEventListener('click', (event) => {
+        const zoom = event.target.closest('[data-zoom]');
+        if (zoom) zoomTo(zoom.dataset.zoom === 'in' ? scale * 1.2 : scale / 1.2);
+        else if (event.target.closest('[data-reset]')) reset();
+        else if (event.target.closest('[data-cancel]')) finish(null);
+        else if (event.target.closest('[data-use]')) cut();
+      });
+
+      async function cut() {
+        const canvas = document.createElement('canvas');
+        canvas.width = spec.width;
+        canvas.height = Math.round(spec.width / spec.aspect);
+        const context = canvas.getContext('2d');
+        context.imageSmoothingEnabled = true;
+        context.imageSmoothingQuality = 'high';
+        // The window, read back in the photo's own pixels.
+        const sx = Math.max(0, -ox / scale);
+        const sy = Math.max(0, -oy / scale);
+        const sw = Math.min(bitmap.width - sx, vw / scale);
+        const sh = Math.min(bitmap.height - sy, vh / scale);
+        context.drawImage(bitmap, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
+        const limit = state.uploads?.maxBytes ?? MAX_UPLOAD_BYTES;
+        const blob = await encodeCrop(canvas, limit);
+        if (!blob) {
+          announce('Cette photo n’a pas pu être préparée. Choisissez-en une autre.', { assertive: true });
+          return;
+        }
+        finish(blob);
+      }
+
+      // The window's size comes from the layout, so measure once it is laid out.
+      requestAnimationFrame(() => {
+        reset();
+        view.focus();
+      });
+      window.addEventListener('resize', reset);
+      dialog.addEventListener('close', () => window.removeEventListener('resize', reset), { once: true });
+    }
+  });
+}
+
+// ---------------------------------------------------------------------------
 // The photo window: the same simple window for the logo, the main photo,
 // categories and products. Photos are saved straight away.
 
@@ -1135,7 +1361,7 @@ function photoSubject(target, id, slot) {
   if (target === 'venue') {
     return slot === 'logo'
       ? { title: 'Logo', name: `le logo du ${venueLabel}`, shape: 'logo', url: state.venue.logoImageUrl }
-      : { title: 'Photo principale', name: `la photo principale du ${venueLabel}`, shape: 'hero', url: state.venue.heroImageUrl, focus: state.venue.heroFocusY };
+      : { title: 'Photo principale', name: `la photo principale du ${venueLabel}`, shape: 'hero', url: state.venue.heroImageUrl };
   }
   const record = target === 'category' ? categoryById(id) : productById(id);
   if (!record) return null;
@@ -1144,8 +1370,7 @@ function photoSubject(target, id, slot) {
 
 function photoStage(subject, preview = null) {
   const url = preview ?? subject.url;
-  const style = subject.shape === 'hero' ? ` style="object-position:50% ${focusOf(subject.focus)}%"` : '';
-  const image = url ? `<img src="${esc(url)}" alt=""${preview ? ' class="is-uploading"' : ''}${style}>` : '';
+  const image = url ? `<img src="${esc(url)}" alt=""${preview ? ' class="is-uploading"' : ''}>` : '';
   if (subject.shape === 'logo') return `<span class="stage-logo${url ? ' has-image' : ''}" data-image>${image}</span>`;
   if (subject.shape === 'hero') return `<span class="stage-hero"><span class="band-frame"><span class="band-arch${url ? ' has-image' : ''}" data-image>${image}</span></span></span>`;
   return `<span class="arch arch-ring stage-arch${url ? ' has-image' : ''}" data-image style="--photo-color:${esc(subject.color)}">${image}</span>`;
@@ -1164,42 +1389,71 @@ function openPhotoWindow(target, id = null, slot = null, { onChange } = {}) {
     const subject = photoSubject(target, id, slot);
     if (!subject) return dialog.close();
     const uploads = state.uploads ?? { enabled: false, message: 'L’envoi d’images n’est pas configuré.' };
-    const nearest = subject.shape === 'hero'
-      ? PHOTO_POSITIONS.reduce((best, option) => (Math.abs(option.value - subject.focus) < Math.abs(best.value - subject.focus) ? option : best))
-      : null;
     const off = working ? ' disabled' : '';
     body.innerHTML = `<p class="eyebrow">Menu ${esc(venueLabel)}</p>
       <h2 id="${uid}-title">${esc(subject.title)}${target === 'venue' ? '' : ` de <span lang="fr">${esc(subject.name)}</span>`}</h2>
-      <div class="photo-stage">${photoStage(subject, preview)}</div>
+      <div class="photo-stage">${subject.url && !preview && cropSupported()
+        ? `<button type="button" class="photo-recrop" data-recrop${off} aria-label="Recadrer ${esc(subject.title.toLowerCase())}">${photoStage(subject)}<span class="photo-recrop-hint">${icon('crop', 16)} Recadrer</span></button>`
+        : photoStage(subject, preview)}</div>
       <p class="photo-status" role="status">${esc(status || (subject.url ? 'Cette photo est affichée dans le menu public.' : 'Aucune photo pour le moment. Le fond coloré est affiché à la place.'))}</p>
       ${error ? `<p class="field-error">${icon('alert', 16)}<span>${esc(error)}</span></p>` : ''}
       ${uploads.enabled ? '' : `<p class="notice notice-warning">${icon('info')}<span><strong>${esc(uploads.message)}</strong> ${esc(uploads.detail ?? '')}</span></p>`}
       <div class="photo-buttons">${uploads.enabled ? `<button type="button" class="btn btn-primary btn-large" data-choose${off}>Choisir une photo</button>` : ''}${subject.url ? `<button type="button" class="btn btn-danger-outline btn-large" data-remove${off}>Supprimer la photo</button>` : ''}</div>
-      ${uploads.enabled ? '<p class="hint">Une photo de cet ordinateur ou téléphone (JPEG, PNG ou WebP). Elle est enregistrée immédiatement.</p>' : ''}
-      ${nearest && subject.url ? `<fieldset class="positions"><legend>Quelle partie de la photo afficher</legend><div class="segmented">${PHOTO_POSITIONS.map((option) => `<button type="button" class="btn" data-position="${option.value}" aria-pressed="${option === nearest}"${off}>${option.label}</button>`).join('')}</div></fieldset>` : ''}`;
+      ${uploads.enabled ? `<p class="hint">Une photo de cet ordinateur ou téléphone (JPEG, PNG ou WebP). Elle est enregistrée immédiatement.${subject.url && cropSupported() ? ' Touchez la photo pour la recadrer ou l’agrandir, autant de fois que vous voulez.' : ''}</p>` : ''}`;
     if (focus) (dialog.querySelector(focus) ?? dialog.querySelector('[data-close]')).focus();
     if (status || error) announce(error || status, { assertive: Boolean(error) });
   }
 
-  async function upload(chosen) {
-    let blob;
+  // A chosen file is framed before it is sent: the cropper decides what the
+  // menu keeps. If this browser cannot crop, the old path still resizes and
+  // uploads the whole photo rather than refusing it.
+  // A newly chosen file is framed, then both are sent: the crop the menu
+  // shows and the whole photo it came from. Keeping the original is what lets
+  // the photo be reframed later without cutting a crop out of a crop.
+  async function choose(chosen) {
+    let display;
+    let original;
     try {
-      blob = await preparePhoto(chosen);
+      if (!IMAGE_TYPES[chosen.type]) throw new Error(`${quoted(chosen.name)} n’est pas une photo JPEG, PNG ou WebP. Choisissez un autre fichier.`);
+      if (chosen.size > MAX_SOURCE_BYTES) throw new Error(`Cette photo est trop volumineuse (${megabytes(chosen.size)}). Choisissez-en une de moins de ${megabytes(MAX_SOURCE_BYTES)}.`);
+      const subject = photoSubject(target, id, slot);
+      if (!cropSupported()) {
+        display = await preparePhoto(chosen);
+      } else {
+        // The kept original is shrunk to a sensible size first: it only ever
+        // has to be large enough to crop from again, never to be published.
+        original = await shrinkPhoto(chosen, ORIGINAL_MAX_SIDE);
+        display = await openCropper(original, subject?.shape);
+        if (!display) return; // Backed out of the cropper: nothing was changed.
+      }
+      const limit = state.uploads?.maxBytes ?? MAX_UPLOAD_BYTES;
+      const total = display.size + (original?.size ?? 0);
+      if (total > limit) throw new Error(`Cette photo reste trop volumineuse (${megabytes(total)}). Choisissez-en une plus petite, de moins de ${megabytes(limit)}.`);
     } catch (error) {
       draw({ error: error.message, focus: '[data-choose]' });
       announce(error.message, { assertive: true });
       return;
     }
+    upload(display, original);
+  }
+
+  // `original` is sent only when a new file was chosen. Left out, the stored
+  // original is kept, so reframing never replaces the photo it crops from.
+  async function upload(blob, original = null) {
     if (busy) return;
     busy = working = true;
     const preview = URL.createObjectURL(blob);
     draw({ status: 'Envoi de la photo…', preview });
     try {
       const params = new URLSearchParams({ op: 'image.upload', venue, target, ...(id ? { id: String(id) } : {}), ...(slot ? { slot } : {}) });
+      const form = new FormData();
+      form.append('display', blob, `display.${IMAGE_TYPES[blob.type] ?? 'webp'}`);
+      if (original) form.append('original', original, `original.${IMAGE_TYPES[original.type] ?? 'webp'}`);
       const result = await request(`/api/admin?${params}`, {
         method: 'POST',
-        headers: { 'Content-Type': blob.type, Accept: 'application/json', 'X-Chichkhan-Admin': '1' },
-        body: blob,
+        // No Content-Type here: the browser adds multipart's own boundary.
+        headers: { Accept: 'application/json', 'X-Chichkhan-Admin': '1' },
+        body: form,
       });
       state = result.state;
       busy = working = false;
@@ -1214,6 +1468,39 @@ function openPhotoWindow(target, id = null, slot = null, { onChange } = {}) {
       busy = working = false;
       URL.revokeObjectURL(preview);
     }
+  }
+
+  // Crop the photo that is already in use: the console hands the original back
+  // from its own address, so it can be reframed as many times as wanted. Each
+  // pass starts from the stored photo, so quality is never stacked twice.
+  async function recrop() {
+    if (busy) return;
+    draw({ status: 'Ouverture de la photo…' });
+    let original;
+    try {
+      const params = new URLSearchParams({ op: 'image.source', venue, target, ...(id ? { id: String(id) } : {}), ...(slot ? { slot } : {}) });
+      const response = await fetch(`/api/admin?${params}`, { headers: { 'X-Chichkhan-Admin': '1' }, credentials: 'same-origin' });
+      if (!response.ok) {
+        const body = await response.json().catch(() => null);
+        throw new Error(body?.error?.message ?? 'La photo n’a pas pu être ouverte.');
+      }
+      original = await response.blob();
+    } catch (error) {
+      draw({ error: error.message, focus: '[data-recrop]' });
+      announce(error.message, { assertive: true });
+      return;
+    }
+    draw();
+    const subject = photoSubject(target, id, slot);
+    const blob = await openCropper(original, subject?.shape);
+    if (!blob) return draw({ focus: '[data-recrop]' });
+    const limit = state.uploads?.maxBytes ?? MAX_UPLOAD_BYTES;
+    if (blob.size > limit) {
+      const message = `Ce recadrage reste trop volumineux (${megabytes(blob.size)}).`;
+      draw({ error: message, focus: '[data-recrop]' });
+      return announce(message, { assertive: true });
+    }
+    upload(blob);
   }
 
   async function remove() {
@@ -1234,26 +1521,18 @@ function openPhotoWindow(target, id = null, slot = null, { onChange } = {}) {
     draw(result ? { status: 'Supprimée. Le fond coloré est affiché à la place.', focus: '[data-choose]' } : { error: 'La photo n’a pas été supprimée. Réessayez.', focus: '[data-remove]' });
   }
 
-  async function position(value) {
-    working = true;
-    draw({ status: 'Enregistrement…' });
-    const result = await mutate('venue.update', { heroFocusY: value }, { working: 'Enregistrement…', quiet: true });
-    working = false;
-    const label = PHOTO_POSITIONS.find((option) => option.value === value)?.label.toLowerCase();
-    draw(result ? { status: `Enregistré. La page affiche maintenant le ${label} de la photo.`, focus: `[data-position="${value}"]` } : { error: 'Cette modification n’a pas été enregistrée. Réessayez.', focus: `[data-position="${value}"]` });
-  }
 
   dialog.addEventListener('click', (event) => {
     if (working) return;
     if (event.target.closest('[data-close]')) dialog.close();
     else if (event.target.closest('[data-choose]')) file.click();
+    else if (event.target.closest('[data-recrop]')) recrop();
     else if (event.target.closest('[data-remove]')) remove();
-    else if (event.target.closest('[data-position]')) position(Number(event.target.closest('[data-position]').dataset.position));
   });
   file.addEventListener('change', () => {
     const chosen = file.files?.[0];
     file.value = '';
-    if (chosen) upload(chosen);
+    if (chosen) choose(chosen);
   });
   draw({ focus: '[data-choose]' });
 }
