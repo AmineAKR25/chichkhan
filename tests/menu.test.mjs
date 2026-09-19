@@ -165,7 +165,8 @@ test("with R2 configured, images render and fall back to the placeholder on erro
   assert.ok(html.includes('src="https://images.example.com/categories/cafe/glaces.webp"'));
   assert.equal((html.match(/class="category-photo has-image"/g) || []).length, 20);
   assert.equal((html.match(/<img[^>]+onerror=/g) || []).length, 22);
-  assert.ok(html.includes("object-position:50% 17%"));
+  // The photo is already cropped to the frame, so nothing repositions it.
+  assert.ok(!html.includes("object-position"), "the header shows the crop itself");
   assert.ok(html.includes('<link rel="preconnect" href="https://images.example.com">'));
   assert.ok(!renderMenuPage(cafe).includes("preconnect"), "no preconnect without images");
 });

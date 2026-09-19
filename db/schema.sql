@@ -23,10 +23,18 @@ create table venues (
   subtitle        text not null default '',
   eyebrow         text not null default '',
   description     text not null default '',
-  hero_image_key  text,
-  hero_image_alt  text not null default '',
-  hero_focus_y    smallint not null default 50 check (hero_focus_y between 0 and 100),
-  logo_image_key  text,
+  -- Two keys per photo: *_image_key is the cropped photo the menu shows,
+  -- *_original_key the untouched one it was cut from, kept so the crop can
+  -- always be redone from the whole photo rather than from a previous crop.
+  hero_image_key    text,
+  hero_original_key text,
+  hero_image_alt    text not null default '',
+  -- Kept for older rows only: the header used to choose which part of an
+  -- uncropped photo to show. The console now crops to the frame's exact
+  -- shape, so nothing reads this any more.
+  hero_focus_y      smallint not null default 50 check (hero_focus_y between 0 and 100),
+  logo_image_key    text,
+  logo_original_key text,
   updated_at      timestamptz not null default now()
 );
 
@@ -48,6 +56,8 @@ create table categories (
   name        text not null check (name <> ''),
   note        text not null default '',
   image_key   text,
+  -- The whole photo the crop was cut from; see venues above.
+  original_key text,
   source      text not null default '',
   position    integer not null default 0,
   is_visible  boolean not null default true,
@@ -68,8 +78,10 @@ create table menu_items (
   is_house        boolean not null default false,
   position        integer not null default 0,
   is_visible      boolean not null default true,
-  -- Optional product photo, an R2 object key like the category image.
+  -- Optional product photo, an R2 object key like the category image, plus
+  -- the whole photo it was cropped from.
   image_key       text,
+  original_key    text,
   updated_at      timestamptz not null default now(),
   -- An item can only sit in a category of its own venue.
   foreign key (venue, category_id) references categories (venue, id) on delete cascade

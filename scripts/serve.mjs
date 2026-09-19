@@ -1,5 +1,5 @@
 import { createServer } from "node:http";
-import { readFile, stat } from "node:fs/promises";
+import { mkdir, readFile, stat } from "node:fs/promises";
 import { resolve, sep, extname } from "node:path";
 import { fileURLToPath } from "node:url";
 import * as admin from "../api/admin.js";
@@ -10,6 +10,7 @@ import { GET as menu } from "../api/menu.js";
 // admin). Reads DATABASE_URL, R2_PUBLIC_BASE_URL and the admin settings from
 // .env.local when present (see package.json).
 const root = fileURLToPath(new URL("../dist/", import.meta.url));
+const uploadsDir = fileURLToPath(new URL("../.local/uploads/", import.meta.url));
 const types = {
   ".html": "text/html; charset=utf-8", ".css": "text/css; charset=utf-8",
   ".js": "text/javascript; charset=utf-8", ".jpg": "image/jpeg",
@@ -41,6 +42,16 @@ async function readBody(req) {
 export async function serve({ handler = menu, label = "Chichkhan" } = {}) {
   const config = JSON.parse(await readFile(new URL("../vercel.json", import.meta.url), "utf8"));
   await stat(root).catch(() => { throw new Error("Build the site first with npm run build."); });
+  // Photos, locally: unless a real S3 service is configured, the admin writes
+  // into .local/uploads and this server hands the same files back under
+  // /uploads, so uploading and cropping can be tried with nothing installed.
+  // Both variables are set here only, so nothing of this reaches Vercel.
+  const port = Number(process.env.PORT || 4173);
+  if (!process.env.S3_ENDPOINT && !process.env.LOCAL_UPLOADS_DIR) {
+    process.env.LOCAL_UPLOADS_DIR = uploadsDir;
+    process.env.R2_PUBLIC_BASE_URL ||= `http://127.0.0.1:${port}/uploads`;
+    await mkdir(uploadsDir, { recursive: true });
+  }
   const rewrites = (config.rewrites || []).map((rule) => ({ pattern: toPattern(rule.source), destination: rule.destination }));
   const headerRules = (config.headers || []).map((rule) => ({ pattern: toPattern(rule.source), headers: rule.headers }));
   const functions = { "/api/menu": { GET: handler }, "/api/admin": admin };
@@ -88,8 +99,11 @@ export async function serve({ handler = menu, label = "Chichkhan" } = {}) {
         res.writeHead(405, { Allow: "GET, HEAD" }).end();
         return;
       }
-      const file = resolve(root, "." + pathname);
-      if (!file.startsWith(resolve(root) + sep)) throw new Error("outside dist");
+      // Photos written by the admin, served the way the R2 bucket serves them.
+      const uploaded = normalized.startsWith("/uploads/");
+      const base = uploaded ? uploadsDir : root;
+      const file = resolve(base, "." + (uploaded ? pathname.slice("/uploads".length) : pathname));
+      if (!file.startsWith(resolve(base) + sep)) throw new Error("outside the served folder");
       if ((await stat(file)).isDirectory()) throw new Error("no directory listings");
       const content = await readFile(file);
       res.writeHead(200, {
@@ -106,10 +120,13 @@ export async function serve({ handler = menu, label = "Chichkhan" } = {}) {
     }
   });
 
-  server.listen(Number(process.env.PORT || 4173), "127.0.0.1", () => {
+  server.listen(port, "127.0.0.1", () => {
     const base = `http://localhost:${server.address().port}`;
     console.log(`${label}: ${base}/restaurant and ${base}/cafe`);
-  console.log(`Admin: open a private link with \`npm run admin:link -- ${base}\` (/admin is 404 without a session).`);
+    console.log(`Admin: open a private link with \`npm run admin:link -- ${base}\` (/admin is 404 without a session).`);
+    // Say where photos go, so "uploads are off" is never a mystery again.
+    if (process.env.LOCAL_UPLOADS_DIR === uploadsDir) console.log(`Photos: saved to .local/uploads and served at ${base}/uploads — no S3 service needed.`);
+    else if (process.env.S3_ENDPOINT) console.log(`Photos: S3 at ${process.env.S3_ENDPOINT}, served from ${process.env.R2_PUBLIC_BASE_URL}.`);
   });
   return server;
 }
