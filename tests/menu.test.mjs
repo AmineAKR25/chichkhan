@@ -247,3 +247,39 @@ test("a venue missing from the database is a 404; an empty venue shows no produc
   assert.ok(html.includes("La carte arrive bientôt."));
   assert.ok(!/class="dish"|menu-data/.test(html));
 });
+
+// --- Footer ------------------------------------------------------------------
+
+const footerOf = (menu) => renderMenuPage(menu).match(/<footer>[\s\S]*?<\/footer>/)[0];
+
+test("the footer carries the venue's own details and links out safely", () => {
+  for (const [slug, menu] of Object.entries(menus)) {
+    const footer = footerOf(menu);
+    const { venue } = menu;
+    assert.match(footer, /Nous trouver[\s\S]*Nous suivre[\s\S]*Votre avis/, slug);
+    for (const text of [venue.address, venue.hours, venue.phone]) assert.ok(footer.includes(encoded(text)), `${slug}: ${text}`);
+    for (const href of [venue.mapsUrl, venue.reviewUrl, venue.instagramUrl, venue.facebookUrl]) {
+      assert.ok(footer.includes(`href="${encoded(href)}"`), `${slug}: ${href}`);
+    }
+    // Anything leaving the site opens away from the menu and cannot reach back.
+    for (const [, attrs] of footer.matchAll(/<a ([^>]*href="https?:[^>]*)>/g)) {
+      assert.match(attrs, /target="_blank"/, attrs);
+      assert.match(attrs, /rel="noopener"/, attrs);
+    }
+    // The guest reads a spaced number; the dialler is handed digits only.
+    assert.ok(footer.includes('href="tel:+21675765793"'), slug);
+    assert.ok(footer.includes(">+216 75 765 793<"), "the printed number keeps its spaces");
+  }
+});
+
+test("a venue with no contact details still renders a footer", () => {
+  const menu = structuredClone(cafe);
+  for (const key of ["address", "phone", "hours", "mapsUrl", "reviewUrl", "instagramUrl", "facebookUrl"]) menu.venue[key] = "";
+  const footer = footerOf(menu);
+  assert.ok(footer.includes("Chichkhan Café"), "the venue is still named");
+  assert.ok(footer.includes("Retour en haut"), "and you can still get back up");
+  for (const heading of ["Nous trouver", "Nous suivre", "Votre avis"]) {
+    assert.ok(!footer.includes(heading), `${heading} should not appear with nothing under it`);
+  }
+  assert.ok(!/href="tel:"|href=""/.test(footer), "no empty links are left behind");
+});

@@ -27,6 +27,14 @@ create table venues (
   hero_image_alt  text not null default '',
   hero_focus_y    smallint not null default 50 check (hero_focus_y between 0 and 100),
   logo_image_key  text,
+  -- Practical details and links, shown in the footer at the end of the menu.
+  address         text not null default '',
+  phone           text not null default '',
+  hours           text not null default '',
+  maps_url        text not null default '',
+  review_url      text not null default '',
+  instagram_url   text not null default '',
+  facebook_url    text not null default '',
   updated_at      timestamptz not null default now()
 );
 

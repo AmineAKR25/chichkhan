@@ -24,8 +24,10 @@ function tuples(table) {
   });
 }
 
-const venues = tuples("venues").map(([slug, name, title, subtitle, eyebrow, description, hero_image_alt, hero_focus_y]) =>
-  ({ slug, name, title, subtitle, eyebrow, description, hero_image_alt, hero_focus_y, hero_image_key: null, logo_image_key: null }));
+const venues = tuples("venues").map(([slug, name, title, subtitle, eyebrow, description, hero_image_alt, hero_focus_y,
+  address, phone, hours, maps_url, review_url, instagram_url, facebook_url]) =>
+  ({ slug, name, title, subtitle, eyebrow, description, hero_image_alt, hero_focus_y, hero_image_key: null, logo_image_key: null,
+     address, phone, hours, maps_url, review_url, instagram_url, facebook_url }));
 const groups = tuples("category_groups").map(([venue, name, position], i) => ({ id: i + 1, venue, name, position }));
 const categories = tuples("categories").map(([venue, group, slug, name, note, source, position], i) => ({
   id: i + 1, venue, group_id: groups.find((g) => g.venue === venue && g.name === group)?.id ?? null, slug, name, note, source, position, image_key: null,
