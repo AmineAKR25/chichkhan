@@ -256,7 +256,8 @@ test("the footer carries the venue's own details and links out safely", () => {
   for (const [slug, menu] of Object.entries(menus)) {
     const footer = footerOf(menu);
     const { venue } = menu;
-    assert.match(footer, /Nous trouver[\s\S]*Nous suivre[\s\S]*Votre avis/, slug);
+    // The ask comes first, then where we are, then where to follow us.
+    assert.match(footer, /Votre avis[\s\S]*Nous trouver[\s\S]*Nous suivre/, slug);
     for (const text of [venue.address, venue.hours, venue.phone]) assert.ok(footer.includes(encoded(text)), `${slug}: ${text}`);
     for (const href of [venue.mapsUrl, venue.reviewUrl, venue.instagramUrl, venue.facebookUrl]) {
       assert.ok(footer.includes(`href="${encoded(href)}"`), `${slug}: ${href}`);

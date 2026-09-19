@@ -171,9 +171,9 @@ kbd{display:none;flex-shrink:0;font:12px/1 var(--sans);padding:6px;border:1px so
 .empty-state h2{font-size:32px}
 .empty-state p{max-width:40ch;margin:16px auto 24px;font-size:15px;color:var(--muted)}
 .empty-state button,.category-filter-empty button{display:inline-flex;align-items:center;justify-content:center;gap:16px;min-height:48px;padding:12px 20px;border-radius:30px;background:var(--brand);color:var(--on-brand);font-size:14px}
-footer{max-width:var(--content-width);margin:auto;padding:30px var(--gutter) calc(28px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap}
+footer{max-width:var(--content-width);margin:auto;padding:30px var(--gutter) calc(30px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--line);display:grid;gap:30px}
 /* One column per phone width, settling into a row once there is space. */
-.footer-top{flex:1;min-width:0;display:grid;gap:26px 34px;grid-template-columns:1fr}
+.footer-top{min-width:0;display:grid;gap:26px 34px;grid-template-columns:1fr}
 .footer-column{min-width:0;display:grid;gap:8px;align-content:start}
 .footer-column h2{font:600 11px/1.5 var(--sans);letter-spacing:.15em;text-transform:uppercase;color:var(--gold)}
 .footer-identity{gap:4px}
@@ -188,8 +188,10 @@ footer p{font-size:13px;color:var(--muted)}
 /* The one thing worth asking for: an outlined chip, not a shouty button. */
 .review-link{align-self:start;padding:0 16px;border:1px solid var(--control-line);border-radius:99px;color:var(--ink)!important}
 .review-link:hover,.review-link:focus-visible{border-color:var(--gold);background:#d9bd8214}
-.back-to-top{display:flex;align-items:center;gap:10px;min-height:44px;font-size:14px}
-.back-to-top svg{width:16px}
+.back-to-top{justify-self:center;display:inline-flex;align-items:center;gap:10px;min-height:48px;padding:0 28px;border:1px solid var(--control-line);border-radius:99px;font:500 14px/1 var(--sans);letter-spacing:.04em;color:var(--ink);transition:color var(--motion),border-color var(--motion),background var(--motion)}
+.back-to-top:hover,.back-to-top:focus-visible{color:var(--gold);border-color:var(--gold);background:#d9bd8214}
+.back-to-top svg{width:16px;transition:transform var(--motion)}
+.back-to-top:hover svg{transform:translateY(-2px)}
 
 /* Ma sélection */
 .has-selection{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
